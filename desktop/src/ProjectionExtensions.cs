@@ -39,8 +39,8 @@ public static class ProjectionExtensions
         result[0, 0] = cotFov / aspectRatio;
         result[1, 1] = cotFov;
         result[2, 2] = farPlane / (farPlane - nearPlane);
-        result[2, 3] = -(farPlane * nearPlane) / (farPlane - nearPlane);
-        result[3, 2] = T.One;
+        result[3, 2] = -(farPlane * nearPlane) / (farPlane - nearPlane);
+        result[2, 3] = T.One;
         result[3, 3] = T.Zero;
 
         return result;

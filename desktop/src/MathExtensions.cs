@@ -73,9 +73,9 @@ public static class Matrix4x4Extensions
     public static Matrix4x4<T> CreateTranslation<T>(T x, T y, T z) where T : unmanaged, INumber<T>
     {
         var result = CreateIdentity<T>();
-        result[0, 3] = x;
-        result[1, 3] = y;
-        result[2, 3] = z;
+        result[3, 0] = x;
+        result[3, 1] = y;
+        result[3, 2] = z;
         return result;
     }
 

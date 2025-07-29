@@ -1,0 +1,15 @@
+/Users/solmidnight/synthesis.game/desktop/bin/Debug/net9.0/Synthesis
+/Users/solmidnight/synthesis.game/desktop/bin/Debug/net9.0/Synthesis.deps.json
+/Users/solmidnight/synthesis.game/desktop/bin/Debug/net9.0/Synthesis.runtimeconfig.json
+/Users/solmidnight/synthesis.game/desktop/bin/Debug/net9.0/Synthesis.dll
+/Users/solmidnight/synthesis.game/desktop/bin/Debug/net9.0/Synthesis.pdb
+/Users/solmidnight/synthesis.game/desktop/obj/Debug/net9.0/Synthesis.GeneratedMSBuildEditorConfig.editorconfig
+/Users/solmidnight/synthesis.game/desktop/obj/Debug/net9.0/Synthesis.AssemblyInfoInputs.cache
+/Users/solmidnight/synthesis.game/desktop/obj/Debug/net9.0/Synthesis.AssemblyInfo.cs
+/Users/solmidnight/synthesis.game/desktop/obj/Debug/net9.0/Synthesis.csproj.CoreCompileInputs.cache
+/Users/solmidnight/synthesis.game/desktop/obj/Debug/net9.0/Synthesis.sourcelink.json
+/Users/solmidnight/synthesis.game/desktop/obj/Debug/net9.0/Synthesis.dll
+/Users/solmidnight/synthesis.game/desktop/obj/Debug/net9.0/refint/Synthesis.dll
+/Users/solmidnight/synthesis.game/desktop/obj/Debug/net9.0/Synthesis.pdb
+/Users/solmidnight/synthesis.game/desktop/obj/Debug/net9.0/Synthesis.genruntimeconfig.cache
+/Users/solmidnight/synthesis.game/desktop/obj/Debug/net9.0/ref/Synthesis.dll

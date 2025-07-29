@@ -27,9 +27,9 @@ vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
         float4(0.0, 0.0, 1.0, 1.0)
     };
 
-    float4 worldPos = float4(positions[vertexID], 0.5, 1.0);
-    float4 viewPos = camera.view * worldPos;
-    out.position = camera.projection * viewPos;
+    float4 worldPos = float4(positions[vertexID], 0.0, 1.0);
+
+    out.position = camera.view * camera.projection * worldPos;
     out.color = colors[vertexID];
     return out;
 }

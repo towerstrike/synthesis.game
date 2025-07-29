@@ -310,7 +310,7 @@ public unsafe struct Matrix4x4<T> where T : unmanaged
 
     public ref T this[int i, int j]
     {
-        get { fixed (byte* p = _data) return ref ((T*)p)[i * 4 + j]; }
+        get { fixed (byte* p = _data) return ref ((T*)p)[j * 4 + i]; }
     }
 
     public ref T this[int i]

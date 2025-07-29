@@ -65,28 +65,28 @@ public func metalGfxCameraPrimary(
     renderer.setCameraPrimary(camera)
 }
 
-// @_cdecl("controller_create")
-// public func controllerCreate() -> UnsafeMutableRawPointer {
-//     let controller = Controller()
-//     return Unmanaged.passRetained(controller).toOpaque()
-// }
+@_cdecl("controller_create")
+public func controllerCreate() -> UnsafeMutableRawPointer {
+    let controller = Controller()
+    return Unmanaged.passRetained(controller).toOpaque()
+}
 
-// @_cdecl("controller_destroy")
-// public func controllerDestroy(controllerPtr: UnsafeMutableRawPointer) {
-//     let controller = Unmanaged<Controller>.fromOpaque(controllerPtr)
-//     controller.release()
-// }
+@_cdecl("controller_destroy")
+public func controllerDestroy(controllerPtr: UnsafeMutableRawPointer) {
+    let controller = Unmanaged<Controller>.fromOpaque(controllerPtr)
+    controller.release()
+}
 
-// @_cdecl("controller_is_connected")
-// public func controllerIsConnected(controllerPtr: UnsafeMutableRawPointer) -> Bool {
-//     let controller = Unmanaged<Controller>.fromOpaque(controllerPtr).takeUnretainedValue()
-//     return controller.isConnected
-// }
+@_cdecl("controller_is_connected")
+public func controllerIsConnected(controllerPtr: UnsafeMutableRawPointer) -> Bool {
+    let controller = Unmanaged<Controller>.fromOpaque(controllerPtr).takeUnretainedValue()
+    return controller.isConnected
+}
 
-// @_cdecl("controller_read_state")
-// public func controllerReadState(controllerPtr: UnsafeMutableRawPointer, statePtr: UnsafeMutableRawPointer) {
-//     let controller = Unmanaged<Controller>.fromOpaque(controllerPtr).takeUnretainedValue()
-//     let state = controller.readState()
-//     let stateBuffer = statePtr.assumingMemoryBound(to: ControllerState.self)
-//     stateBuffer.pointee = state
-// }
+@_cdecl("controller_read_state")
+public func controllerReadState(controllerPtr: UnsafeMutableRawPointer, statePtr: UnsafeMutableRawPointer) {
+    let controller = Unmanaged<Controller>.fromOpaque(controllerPtr).takeUnretainedValue()
+    let state = controller.readState()
+    let stateBuffer = statePtr.assumingMemoryBound(to: ControllerState.self)
+    stateBuffer.pointee = state
+}
