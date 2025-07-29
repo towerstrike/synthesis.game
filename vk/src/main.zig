@@ -5,12 +5,6 @@ const context = @import("context.zig");
 pub fn main() !void {
     std.log.info("Starting Raw Vulkan application...", .{});
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
 
-    var ctx = try context.createVulkanContext(allocator, .{
-        .app_name = "Simple App",
-        .enable_validation = true,
-    });
-    defer ctx.deinit();
+    const ctx = context.createVulkanContext(, config: struct{app_name:[*:0]const u8="Vulkan App", enable_validation:bool=false, required_extensions:[]const [*:0]const u8=&.{}, device_extensions:[]const [*:0]const u8=&.{}, })
 }

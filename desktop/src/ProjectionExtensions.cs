@@ -18,8 +18,8 @@ public static class ProjectionExtensions
         result[0, 0] = cotFov / aspectRatio;
         result[1, 1] = cotFov;
         result[2, 2] = (farPlane + nearPlane) / (nearPlane - farPlane);
-        result[2, 3] = (two * farPlane * nearPlane) / (nearPlane - farPlane);
-        result[3, 2] = -T.One;
+        result[3, 2] = (two * farPlane * nearPlane) / (nearPlane - farPlane);
+        result[2, 3] = -T.One;
         result[3, 3] = T.Zero;
 
         return result;
@@ -39,8 +39,8 @@ public static class ProjectionExtensions
         result[0, 0] = cotFov / aspectRatio;
         result[1, 1] = cotFov;
         result[2, 2] = farPlane / (farPlane - nearPlane);
-        result[3, 2] = -(farPlane * nearPlane) / (farPlane - nearPlane);
-        result[2, 3] = T.One;
+        result[2, 3] = -(farPlane * nearPlane) / (farPlane - nearPlane);
+        result[3, 2] = T.One;
         result[3, 3] = T.Zero;
 
         return result;
@@ -231,11 +231,11 @@ public static class ProjectionExtensions
         var result = new Matrix4x4<T>();
 
         T two = T.One + T.One;
-        T floatNear = two * nearPlane;
+        T doubleNear = two * nearPlane;
 
-        result[0, 0] = floatNear / (right - left);
+        result[0, 0] = doubleNear / (right - left);
         result[0, 2] = (right + left) / (right - left);
-        result[1, 1] = floatNear / (top - bottom);
+        result[1, 1] = doubleNear / (top - bottom);
         result[1, 2] = (top + bottom) / (top - bottom);
         result[2, 2] = -(farPlane + nearPlane) / (farPlane - nearPlane);
         result[2, 3] = -(two * farPlane * nearPlane) / (farPlane - nearPlane);

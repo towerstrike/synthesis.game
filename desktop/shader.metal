@@ -2,8 +2,7 @@
 using namespace metal;
 
 struct CameraData {
-    float4x4 view;
-    float4x4 projection;
+    float4x4 viewProjection;
 };
 
 struct VertexOut {
@@ -15,11 +14,34 @@ vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
                             constant CameraData& camera [[buffer(0)]]) {
     VertexOut out;
 
-    float2 positions[3] = {
-        float2(-0.5, -0.5),
-        float2( 0.5, -0.5),
-        float2( 0.0,  0.5)
-    };
+    // Cube vertices (8 vertices)
+    float3 cubeVertices[8] = {
+      float3(0.0, 0.0, 0.0),
+      float3(1.0, 0.0, 0.0),
+      float3(0.0, 1.0, 0.0),
+      float3(1.0, 1.0, 0.0),
+      float3(0.0, 0.0, 1.0),
+      float3(1.0, 0.0, 1.0),
+      float3(0.0, 1.0, 1.0),
+      float3(1.0, 1.0, 1.0)
+  };
+
+  int triIndices[6] = {0, 1, 2, 0, 2, 3};
+
+  int cubeIndices[24] = {
+      // Top face (Z+)
+      4, 5, 7, 6,
+      // Bottom face (Z-)
+      1, 0, 2, 3,
+      // Front face (Y+)
+      6, 7, 3, 2,
+      // Back face (Y-)
+      0, 1, 5, 4,
+      // Right face (X+)
+      5, 1, 3, 7,
+      // Left face (X-)
+      0, 4, 6, 2
+  };
 
     float4 colors[3] = {
         float4(1.0, 0.0, 0.0, 1.0),
@@ -27,10 +49,16 @@ vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
         float4(0.0, 0.0, 1.0, 1.0)
     };
 
-    float4 worldPos = float4(positions[vertexID], 0.0, 1.0);
+    uint faceIndex = vertexID / 6;
+    uint vertexInFace = vertexID % 6;
 
-    out.position = camera.view * camera.projection * worldPos;
-    out.color = colors[vertexID];
+    int cubeIndex = cubeIndices[triIndices[vertexInFace] + faceIndex * 4];
+
+    float3 position = cubeVertices[cubeIndex];
+    float4 worldPos = float4(position.xzy, 1.0);
+
+    out.position = camera.viewProjection * worldPos;
+    out.color = colors[triIndices[vertexInFace % 3]];
     return out;
 }
 

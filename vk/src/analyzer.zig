@@ -1,6 +1,6 @@
 const std = @import("std");
 const vk = @import("vulkan");
-const wrapper_types = @import("types.zig");
+const wrapper_types = @import("wrapper_types.zig");
 const ParameterInfo = wrapper_types.ParameterInfo;
 const WrapperConfig = wrapper_types.WrapperConfig;
 
@@ -55,12 +55,12 @@ pub fn FunctionInfo(comptime func_name: []const u8) type {
             if (index >= params.len) @compileError("Parameter index out of bounds");
 
             const param_type = params[index].type.?;
-            const type_info_inner = @typeInfo(param_type);
+            const type_info = @typeInfo(param_type);
             var info = ParameterInfo{};
 
-            switch (type_info_inner) {
-                .pointer => |ptr_info_inner| {
-                    switch (ptr_info_inner.size) {
+            switch (type_info) {
+                .pointer => |ptr_info| {
+                    switch (ptr_info.size) {
                         .One => {
                             const child_info = @typeInfo(ptr_info.child);
                             // Check if it's a pointer to count (u32*, etc.)
@@ -106,12 +106,12 @@ pub fn FunctionInfo(comptime func_name: []const u8) type {
         }
 
         fn analyzeParameterType(comptime param_type: type) ParameterInfo {
-            const type_info_inner = @typeInfo(param_type);
+            const type_info = @typeInfo(param_type);
             var info = ParameterInfo{};
 
-            switch (type_info_inner) {
-                .pointer => |ptr_info_inner| {
-                    switch (ptr_info_inner.size) {
+            switch (type_info) {
+                .pointer => |ptr_info| {
+                    switch (ptr_info.size) {
                         .Many, .C => {
                             if (ptr_info.is_const) {
                                 info.is_input_array = true;
@@ -134,7 +134,7 @@ pub fn FunctionInfo(comptime func_name: []const u8) type {
             var array_index: ?usize = null;
             var element_type: ?type = null;
 
-            inline for (params, 0..) |_, i| {
+            inline for (params, 0..) |param, i| {
                 const analysis = analyzeParameter(i);
 
                 if (analysis.is_output_count) {

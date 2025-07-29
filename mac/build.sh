@@ -8,6 +8,7 @@ set -e
 echo "Building Metal Swift library..."
 
 # Create build directory if it doesn't exist
+rm -rf ./build
 mkdir -p build
 
 # Use xcrun to ensure correct toolchain
@@ -16,7 +17,7 @@ export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 # Compile Swift files into a dynamic library
 swiftc -emit-library \
     -o build/lib-synthesis.dylib \
-    -Xlinker -install_name -Xlinker @rpath/libmetalrender.dylib \
+    -Xlinker -install_name -Xlinker @rpath/lib-synthesis.dylib \
     -framework Metal \
     -framework MetalKit \
     -framework Cocoa \

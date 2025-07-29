@@ -1,12 +1,94 @@
 const std = @import("std");
 const vk = @import("vulkan");
-const wrapper_types = @import("types.zig");
 const entry = @import("entry.zig");
-const function_analyzer = @import("analyzer.zig");
-const wrapper_generator = @import("generator.zig");
+const wrapper_types = @import("wrapper_types.zig");
+const function_analyzer = @import("function_analyzer.zig");
+const wrapper_generator = @import("wrapper_generator.zig");
 
 const Allocator = std.mem.Allocator;
 const VulkanError = wrapper_types.VulkanError;
+
+// Memory management for dynamic arrays
+pub const VulkanSlice = struct {
+    data: []u8,
+    allocator: Allocator,
+
+    pub fn init(allocator: Allocator, size: usize) !VulkanSlice {
+        const data = try allocator.alloc(u8, size);
+        return VulkanSlice{
+            .data = data,
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit(self: *VulkanSlice) void {
+        self.allocator.free(self.data);
+    }
+
+    pub fn asSlice(self: *const VulkanSlice, comptime T: type) []T {
+        const item_count = self.data.len / @sizeOf(T);
+        return @as([*]T, @ptrCast(@alignCast(self.data.ptr)))[0..item_count];
+    }
+
+    pub fn asPtr(self: *const VulkanSlice, comptime T: type) [*]T {
+        return @ptrCast(@alignCast(self.data.ptr));
+    }
+};
+
+// Function category enum
+pub const FunctionCategory = enum { global, instance, device };
+
+// Parameter analysis for automatic handling
+pub const ParameterInfo = struct {
+    is_output_count: bool = false,
+    is_output_array: bool = false,
+    is_input_array: bool = false,
+    array_count_param_index: ?usize = null,
+    is_optional: bool = false,
+    element_type: ?type = null,
+};
+
+// Wrapper configuration for different function patterns
+pub const WrapperConfig = struct {
+    has_result: bool,
+    return_type: ?type,
+    needs_two_call: bool = false,
+    allocates_memory: bool = false,
+    count_param_index: ?usize = null,
+    array_param_index: ?usize = null,
+    element_type: ?type = null,
+};
+
+// Common wrapper return types
+pub fn WrapperResult(comptime T: type) type {
+    return union(enum) {
+        success: T,
+        incomplete: T,
+        timeout: T,
+        not_ready: T,
+    };
+}
+
+pub const VoidResult = WrapperResult(void);
+
+// Helper for slice management in two-call pattern
+pub const TwoCallResult = struct {
+    count: u32,
+    data: ?VulkanSlice = null,
+
+    pub fn deinit(self: *TwoCallResult) void {
+        if (self.data) |*slice| {
+            slice.deinit();
+        }
+    }
+
+    pub fn asSlice(self: *const TwoCallResult, comptime T: type) []T {
+        if (self.data) |slice| {
+            return slice.asSlice(T);
+        }
+        return &[_]T{};
+    }
+};
 
 // Main wrapper interface that extends your entry system
 pub const VulkanWrapper = struct {
@@ -46,8 +128,8 @@ pub const VulkanWrapper = struct {
 };
 
 // Generate wrapper structs for each category
-const all_functions = entry.allFunctionNames();
-const categorized = entry.categorizeFunctions(all_functions);
+const all_functions = comptime entry.allFunctionNames();
+const categorized = comptime entry.categorizeFunctions(all_functions);
 
 const GlobalWrappers = struct {
     entry_ptr: *const entry.Entry,
@@ -106,7 +188,7 @@ fn generateMethods(comptime function_names: []const []const u8, comptime categor
 
     return @Type(std.builtin.Type{
         .@"struct" = std.builtin.Type.Struct{
-            .layout = .@"anytype",
+            .layout = .auto,
             .fields = &[_]std.builtin.Type.StructField{},
             .decls = struct_decls,
             .is_tuple = false,
@@ -121,23 +203,23 @@ fn generateMethodStruct(comptime func_name: []const u8, comptime Wrapper: type) 
 
     return struct {
         // Basic call method
-        pub fn call(self: anytype, args: anytype) VulkanError!wrapper_types.CallResult {
+        pub fn call(self: anytype, args: anytype) VulkanError!auto {
             return Wrapper.call(self.entry_ptr, args);
         }
 
         // Pattern-specific methods
-        pub fn simple(self: anytype, args: anytype) VulkanError!wrapper_types.SimpleResult {
+        pub fn simple(self: anytype, args: anytype) VulkanError!auto {
             return Wrapper.callSimple(self.entry_ptr, args);
         }
 
-        pub fn enumerate(self: anytype, allocator: Allocator, args: anytype) VulkanError!wrapper_types.TwoCallResult {
+        pub fn enumerate(self: anytype, allocator: Allocator, args: anytype) VulkanError!auto {
             if (pattern != .two_call_enumeration) {
                 @compileError("enumerate not available for " ++ func_name);
             }
             return Wrapper.enumerate(self.entry_ptr, allocator, args);
         }
 
-        pub fn managed(self: anytype, allocator: Allocator, args: anytype) VulkanError!wrapper_types.ManagedResult {
+        pub fn managed(self: anytype, allocator: Allocator, args: anytype) VulkanError!auto {
             return Wrapper.callManaged(self.entry_ptr, allocator, args);
         }
 
@@ -151,7 +233,7 @@ fn generateMethodStruct(comptime func_name: []const u8, comptime Wrapper: type) 
 // Convenience functions for common operations
 pub const Convenience = struct {
     // Instance creation with error handling
-    pub fn createInstance(wrapper: *VulkanWrapper, _: Allocator, create_info: *const vk.VkInstanceCreateInfo) !vk.VkInstance {
+    pub fn createInstance(wrapper: *VulkanWrapper, allocator: Allocator, create_info: *const vk.VkInstanceCreateInfo) !vk.VkInstance {
         var instance: vk.VkInstance = undefined;
 
         try wrapper.global.vkCreateInstance.simple(.{ create_info, null, &instance });
@@ -161,7 +243,7 @@ pub const Convenience = struct {
         return instance;
     }
 
-    // Enumerate with anytypematic memory management
+    // Enumerate with automatic memory management
     pub fn enumeratePhysicalDevices(wrapper: *VulkanWrapper, allocator: Allocator, instance: vk.VkInstance) ![]vk.VkPhysicalDevice {
         var result = try wrapper.instance.vkEnumeratePhysicalDevices.enumerate(allocator, .{instance});
         defer result.deinit();
@@ -169,7 +251,7 @@ pub const Convenience = struct {
         return try allocator.dupe(vk.VkPhysicalDevice, result.asSlice(vk.VkPhysicalDevice));
     }
 
-    // Device creation with anytypematic function loading
+    // Device creation with automatic function loading
     pub fn createDevice(wrapper: *VulkanWrapper, physical_device: vk.VkPhysicalDevice, create_info: *const vk.VkDeviceCreateInfo) !vk.VkDevice {
         var device: vk.VkDevice = undefined;
 

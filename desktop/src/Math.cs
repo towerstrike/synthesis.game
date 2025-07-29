@@ -308,9 +308,9 @@ public unsafe struct Matrix4x4<T> where T : unmanaged
         }
     }
 
-    public ref T this[int i, int j]
+    public ref T this[int col, int row]
     {
-        get { fixed (byte* p = _data) return ref ((T*)p)[j * 4 + i]; }
+        get { fixed (byte* p = _data) return ref ((T*)p)[col * 4 + row]; } // Column-major storage: [col, row]
     }
 
     public ref T this[int i]
@@ -325,17 +325,17 @@ public unsafe struct Matrix4x4<T> where T : unmanaged
         {
             var v = new Vector4<T>();
             v[0] = this[0, 0];
-            v[1] = this[1, 0];
-            v[2] = this[2, 0];
-            v[3] = this[3, 0];
+            v[1] = this[0, 1];
+            v[2] = this[0, 2];
+            v[3] = this[0, 3];
             return v;
         }
         set
         {
             this[0, 0] = value[0];
-            this[1, 0] = value[1];
-            this[2, 0] = value[2];
-            this[3, 0] = value[3];
+            this[0, 1] = value[1];
+            this[0, 2] = value[2];
+            this[0, 3] = value[3];
         }
     }
 
@@ -344,18 +344,18 @@ public unsafe struct Matrix4x4<T> where T : unmanaged
         get
         {
             var v = new Vector4<T>();
-            v[0] = this[0, 1];
+            v[0] = this[1, 0];
             v[1] = this[1, 1];
-            v[2] = this[2, 1];
-            v[3] = this[3, 1];
+            v[2] = this[1, 2];
+            v[3] = this[1, 3];
             return v;
         }
         set
         {
-            this[0, 1] = value[0];
+            this[1, 0] = value[0];
             this[1, 1] = value[1];
-            this[2, 1] = value[2];
-            this[3, 1] = value[3];
+            this[1, 2] = value[2];
+            this[1, 3] = value[3];
         }
     }
 
@@ -364,18 +364,18 @@ public unsafe struct Matrix4x4<T> where T : unmanaged
         get
         {
             var v = new Vector4<T>();
-            v[0] = this[0, 2];
-            v[1] = this[1, 2];
+            v[0] = this[2, 0];
+            v[1] = this[2, 1];
             v[2] = this[2, 2];
-            v[3] = this[3, 2];
+            v[3] = this[2, 3];
             return v;
         }
         set
         {
-            this[0, 2] = value[0];
-            this[1, 2] = value[1];
+            this[2, 0] = value[0];
+            this[2, 1] = value[1];
             this[2, 2] = value[2];
-            this[3, 2] = value[3];
+            this[2, 3] = value[3];
         }
     }
 
@@ -384,17 +384,17 @@ public unsafe struct Matrix4x4<T> where T : unmanaged
         get
         {
             var v = new Vector4<T>();
-            v[0] = this[0, 3];
-            v[1] = this[1, 3];
-            v[2] = this[2, 3];
+            v[0] = this[3, 0];
+            v[1] = this[3, 1];
+            v[2] = this[3, 2];
             v[3] = this[3, 3];
             return v;
         }
         set
         {
-            this[0, 3] = value[0];
-            this[1, 3] = value[1];
-            this[2, 3] = value[2];
+            this[3, 0] = value[0];
+            this[3, 1] = value[1];
+            this[3, 2] = value[2];
             this[3, 3] = value[3];
         }
     }
@@ -423,16 +423,17 @@ public unsafe struct Matrix4x4<T> where T : unmanaged
     public static Matrix4x4<T> operator *(Matrix4x4<T> a, Matrix4x4<T> b)
     {
         var result = new Matrix4x4<T>();
-        for (int i = 0; i < 4; i++)
+        // Column-major multiplication
+        for (int col = 0; col < 4; col++)
         {
-            for (int j = 0; j < 4; j++)
+            for (int row = 0; row < 4; row++)
             {
                 dynamic sum = default(T);
                 for (int k = 0; k < 4; k++)
                 {
-                    sum = (dynamic)sum + (dynamic)a[i, k] * b[k, j];
+                    sum = (dynamic)sum + (dynamic)a[k, row] * b[col, k];
                 }
-                result[i, j] = sum;
+                result[col, row] = sum;
             }
         }
         return result;
@@ -456,10 +457,11 @@ public unsafe struct Matrix4x4<T> where T : unmanaged
     public static Vector4<T> operator *(Matrix4x4<T> m, Vector4<T> v)
     {
         var result = new Vector4<T>();
-        result.X = (dynamic)m[0, 0] * v.X + (dynamic)m[0, 1] * v.Y + (dynamic)m[0, 2] * v.Z + (dynamic)m[0, 3] * v.W;
-        result.Y = (dynamic)m[1, 0] * v.X + (dynamic)m[1, 1] * v.Y + (dynamic)m[1, 2] * v.Z + (dynamic)m[1, 3] * v.W;
-        result.Z = (dynamic)m[2, 0] * v.X + (dynamic)m[2, 1] * v.Y + (dynamic)m[2, 2] * v.Z + (dynamic)m[2, 3] * v.W;
-        result.W = (dynamic)m[3, 0] * v.X + (dynamic)m[3, 1] * v.Y + (dynamic)m[3, 2] * v.Z + (dynamic)m[3, 3] * v.W;
+        // Column-major: m[col, row]
+        result.X = (dynamic)m[0, 0] * v.X + (dynamic)m[1, 0] * v.Y + (dynamic)m[2, 0] * v.Z + (dynamic)m[3, 0] * v.W;
+        result.Y = (dynamic)m[0, 1] * v.X + (dynamic)m[1, 1] * v.Y + (dynamic)m[2, 1] * v.Z + (dynamic)m[3, 1] * v.W;
+        result.Z = (dynamic)m[0, 2] * v.X + (dynamic)m[1, 2] * v.Y + (dynamic)m[2, 2] * v.Z + (dynamic)m[3, 2] * v.W;
+        result.W = (dynamic)m[0, 3] * v.X + (dynamic)m[1, 3] * v.Y + (dynamic)m[2, 3] * v.Z + (dynamic)m[3, 3] * v.W;
         return result;
     }
 
@@ -509,9 +511,9 @@ public unsafe struct Matrix3x3<T> where T : unmanaged
         }
     }
 
-    public ref T this[int i, int j]
+    public ref T this[int col, int row]
     {
-        get { fixed (byte* p = _data) return ref ((T*)p)[i * 3 + j]; }
+        get { fixed (byte* p = _data) return ref ((T*)p)[col * 3 + row]; } // Column-major storage: [col, row]
     }
 
     public ref T this[int i]
@@ -526,15 +528,15 @@ public unsafe struct Matrix3x3<T> where T : unmanaged
         {
             var v = new Vector3<T>();
             v[0] = this[0, 0];
-            v[1] = this[1, 0];
-            v[2] = this[2, 0];
+            v[1] = this[0, 1];
+            v[2] = this[0, 2];
             return v;
         }
         set
         {
             this[0, 0] = value[0];
-            this[1, 0] = value[1];
-            this[2, 0] = value[2];
+            this[0, 1] = value[1];
+            this[0, 2] = value[2];
         }
     }
 
@@ -543,16 +545,16 @@ public unsafe struct Matrix3x3<T> where T : unmanaged
         get
         {
             var v = new Vector3<T>();
-            v[0] = this[0, 1];
+            v[0] = this[1, 0];
             v[1] = this[1, 1];
-            v[2] = this[2, 1];
+            v[2] = this[1, 2];
             return v;
         }
         set
         {
-            this[0, 1] = value[0];
+            this[1, 0] = value[0];
             this[1, 1] = value[1];
-            this[2, 1] = value[2];
+            this[1, 2] = value[2];
         }
     }
 
@@ -561,15 +563,15 @@ public unsafe struct Matrix3x3<T> where T : unmanaged
         get
         {
             var v = new Vector3<T>();
-            v[0] = this[0, 2];
-            v[1] = this[1, 2];
+            v[0] = this[2, 0];
+            v[1] = this[2, 1];
             v[2] = this[2, 2];
             return v;
         }
         set
         {
-            this[0, 2] = value[0];
-            this[1, 2] = value[1];
+            this[2, 0] = value[0];
+            this[2, 1] = value[1];
             this[2, 2] = value[2];
         }
     }

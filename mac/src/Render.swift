@@ -114,24 +114,42 @@ extension Renderer: MTKViewDelegate {
             print("Failed to create command buffer or render encoder")
             return
         }
-        
+
         // Set clear color to make sure we're rendering
-        renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0)
+        renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(
+            red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0)
 
         renderEncoder.setRenderPipelineState(pipelineState)
         if let camera = primaryCamera {
-            print("Camera view: \(camera.pointee.view)")
-            print("Camera projection: \(camera.pointee.projection)")
-            renderEncoder.setVertexBytes(camera, length: MemoryLayout<Camera>.size, index: 0)
-        } else {
-            // Use identity matrices if no camera is set
-            var defaultCamera = Camera()
-            withUnsafePointer(to: &defaultCamera) { ptr in
-                renderEncoder.setVertexBytes(ptr, length: MemoryLayout<Camera>.size, index: 0)
+            // Create a struct that matches the shader's CameraData layout
+            struct CameraData {
+                var viewProj: float4x4
+            }
+
+            print("View matrix: \(camera.pointee.view)")
+            print("Projection matrix: \(camera.pointee.projection)")
+            let viewProj = camera.pointee.projection * camera.pointee.view
+            print("ViewProj result: \(viewProj)")
+
+            // Read the camera data from the pointer
+            let cameraData = CameraData(
+                viewProj: viewProj
+            )
+
+            print("CameraData.viewProj: \(cameraData.viewProj)")
+
+            // Pass the actual struct data to Metal
+            withUnsafeBytes(of: cameraData) { bytes in
+                renderEncoder.setVertexBytes(
+                    bytes.baseAddress!, length: MemoryLayout<CameraData>.size, index: 0)
             }
         }
+        // Draw cube as 6 faces, each with 2 triangles (6 vertices per face using triangle list)
 
-        renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+        renderEncoder.drawPrimitives(
+            type: .triangle,
+            vertexStart: 0,
+            vertexCount: 36)
         renderEncoder.endEncoding()
 
         if let drawable = view.currentDrawable {

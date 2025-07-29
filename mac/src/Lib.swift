@@ -44,7 +44,7 @@ public func metalGfxCameraProjection(
 ) {
     let camera = cameraPtr.assumingMemoryBound(to: Camera.self)
     let projection = projectionPtr.assumingMemoryBound(to: float4x4.self)
-    camera.pointee.projection = projection.pointee
+    camera.pointee.projection = projection.pointee.transpose
 }
 
 @_cdecl("camera_transform")
@@ -53,7 +53,10 @@ public func metalGfxCameraTransform(
 ) {
     let camera = cameraPtr.assumingMemoryBound(to: Camera.self)
     let transform = transformPtr.assumingMemoryBound(to: float4x4.self)
+    print("Setting camera transform:")
+    print("Input transform: \(transform.pointee)")
     camera.pointee.view = transform.pointee.inverse
+    print("Resulting view matrix: \(camera.pointee.view)")
 }
 
 @_cdecl("camera_primary")
@@ -84,7 +87,9 @@ public func controllerIsConnected(controllerPtr: UnsafeMutableRawPointer) -> Boo
 }
 
 @_cdecl("controller_read_state")
-public func controllerReadState(controllerPtr: UnsafeMutableRawPointer, statePtr: UnsafeMutableRawPointer) {
+public func controllerReadState(
+    controllerPtr: UnsafeMutableRawPointer, statePtr: UnsafeMutableRawPointer
+) {
     let controller = Unmanaged<Controller>.fromOpaque(controllerPtr).takeUnretainedValue()
     let state = controller.readState()
     let stateBuffer = statePtr.assumingMemoryBound(to: ControllerState.self)

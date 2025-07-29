@@ -57,7 +57,7 @@ public static class QuaternionExtensions
         var halfAngle = angle / (T.One + T.One);
         var sin = T.Sin(halfAngle);
         var cos = T.Cos(halfAngle);
-        
+
         var result = new Quaternion<T>();
         result.X = axis.X * sin;
         result.Y = axis.Y * sin;
@@ -74,6 +74,12 @@ public static class QuaternionExtensions
         result.Z = T.Zero;
         result.W = T.One;
         return result;
+    }
+
+    // Convenience method for float identity quaternion
+    public static Quaternion<float> Identity()
+    {
+        return CreateIdentity<float>();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -113,22 +119,27 @@ public static class QuaternionExtensions
 
         var two = T.One + T.One;
         var result = new Matrix4x4<T>();
-        
+
+        // Column-major: result[col, row]
+        // Column 0
         result[0, 0] = T.One - two * (yy + zz);
         result[0, 1] = two * (xy + wz);
         result[0, 2] = two * (xz - wy);
         result[0, 3] = T.Zero;
 
+        // Column 1
         result[1, 0] = two * (xy - wz);
         result[1, 1] = T.One - two * (xx + zz);
         result[1, 2] = two * (yz + wx);
         result[1, 3] = T.Zero;
 
+        // Column 2
         result[2, 0] = two * (xz + wy);
         result[2, 1] = two * (yz - wx);
         result[2, 2] = T.One - two * (xx + yy);
         result[2, 3] = T.Zero;
 
+        // Column 3 (translation)
         result[3, 0] = T.Zero;
         result[3, 1] = T.Zero;
         result[3, 2] = T.Zero;
@@ -138,10 +149,10 @@ public static class QuaternionExtensions
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Quaternion<T> Slerp<T>(Quaternion<T> a, Quaternion<T> b, T t) where T : unmanaged, IFloatingPoint<T>, ITrigonometricFunctions<T>
+    public static Quaternion<T> Slerp<T>(Quaternion<T> a, Quaternion<T> b, T t) where T : unmanaged, IFloatingPoint<T>, ITrigonometricFunctions<T>, IRootFunctions<T>
     {
         var dot = a.Dot(b);
-        
+
         // Ensure shortest path
         if (dot < T.Zero)
         {
@@ -173,5 +184,113 @@ public static class QuaternionExtensions
         slerped.Z = w1 * a.Z + w2 * b.Z;
         slerped.W = w1 * a.W + w2 * b.W;
         return slerped;
+    }
+
+    // Create a quaternion that represents the rotation for a camera looking at a target
+    // Returns the camera transform rotation (not the view matrix rotation)
+    // For coordinate system: Z+ up, Y+ forward, X+ right
+    public static Quaternion<T> CreateLookAt<T>(Vector3<T> from, Vector3<T> to, Vector3<T> up)
+        where T : unmanaged, INumber<T>, IFloatingPoint<T>, ITrigonometricFunctions<T>, IRootFunctions<T>
+    {
+        // Calculate forward direction (from camera to target)
+        var forward = new Vector3<T> {
+            X = to.X - from.X,
+            Y = to.Y - from.Y,
+            Z = to.Z - from.Z
+        };
+        
+        // Handle case where from == to
+        var lengthSq = forward.LengthSquared();
+        if (lengthSq == T.Zero)
+        {
+            return CreateIdentity<T>();
+        }
+        
+        forward = forward.Normalize();
+
+        // Calculate right vector
+        var right = forward.Cross(up);
+        var rightLengthSq = right.LengthSquared();
+        
+        // Handle case where forward is parallel to up
+        if (rightLengthSq == T.Zero)
+        {
+            // Choose a different up vector
+            if (T.Abs(forward.X) < T.CreateChecked(0.9))
+            {
+                right = forward.Cross(Vector3Extensions.UnitX<T>());
+            }
+            else
+            {
+                right = forward.Cross(Vector3Extensions.UnitY<T>());
+            }
+        }
+        
+        right = right.Normalize();
+
+        // Recalculate up to ensure orthogonal basis
+        var recalcUp = right.Cross(forward);
+
+        // Create rotation matrix
+        // For the coordinate system where Z+ is up and Y+ is forward:
+        // The camera's local axes should be:
+        // X axis = right
+        // Y axis = forward 
+        // Z axis = up
+        var m00 = right.X;      // row 0, col 0
+        var m01 = forward.X;    // row 0, col 1  
+        var m02 = recalcUp.X;   // row 0, col 2
+
+        var m10 = right.Y;      // row 1, col 0
+        var m11 = forward.Y;    // row 1, col 1
+        var m12 = recalcUp.Y;   // row 1, col 2
+
+        var m20 = right.Z;      // row 2, col 0
+        var m21 = forward.Z;    // row 2, col 1
+        var m22 = recalcUp.Z;   // row 2, col 2
+
+        // Convert rotation matrix to quaternion
+        var trace = m00 + m11 + m22;
+
+        if (trace > T.Zero)
+        {
+            var s = T.CreateChecked(0.5) / T.Sqrt(trace + T.One);
+            return new Quaternion<T> {
+                W = T.CreateChecked(0.25) / s,
+                X = (m12 - m21) * s,
+                Y = (m20 - m02) * s,
+                Z = (m01 - m10) * s
+            };
+        }
+        else if (m00 > m11 && m00 > m22)
+        {
+            var s = T.CreateChecked(2) * T.Sqrt(T.One + m00 - m11 - m22);
+            return new Quaternion<T> {
+                W = (m12 - m21) / s,
+                X = T.CreateChecked(0.25) * s,
+                Y = (m10 + m01) / s,
+                Z = (m20 + m02) / s
+            };
+        }
+        else if (m11 > m22)
+        {
+            var s = T.CreateChecked(2) * T.Sqrt(T.One + m11 - m00 - m22);
+            return new Quaternion<T> {
+                W = (m20 - m02) / s,
+                X = (m10 + m01) / s,
+                Y = T.CreateChecked(0.25) * s,
+                Z = (m21 + m12) / s
+            };
+        }
+        else
+        {
+            var s = T.CreateChecked(2) * T.Sqrt(T.One + m22 - m00 - m11);
+            return new Quaternion<T> {
+                W = (m01 - m10) / s,
+                X = (m20 + m02) / s,
+                Y = (m21 + m12) / s,
+                Z = T.CreateChecked(0.25) * s
+            };
+        }
     }
 }

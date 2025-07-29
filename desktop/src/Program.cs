@@ -35,35 +35,58 @@ static unsafe extern void CameraSetTransform(IntPtr cameraPtr, Matrix4x4<float>*
   static extern bool ControllerIsConnected(IntPtr controllerPtr);
 
   [DllImport("lib-synthesis.dylib", EntryPoint = "controller_read_state", CallingConvention = CallingConvention.Cdecl)]
-  static extern void ControllerReadState(IntPtr controllerPtr, ControllerState* statePtr);
+  static unsafe extern void ControllerReadState(IntPtr controllerPtr, ControllerState* statePtr);
 
 
 
 var renderer = GfxCreate();
 var view = View(renderer, 800, 600);
 var camera = Camera();
-var rotation = Quaternion<float>();
+var position = Vector3Extensions.Zero<float>();
+position.Y -= 3.0f;
+var rotation = QuaternionExtensions.CreateLookAt<float>(position, Vector3Extensions.Zero<float>(), Vector3Extensions.UnitZ<float>());
+var head = Vector2Extensions.Zero<float>();
 var controller = ControllerCreate();
 CameraSetPrimary(renderer, camera);
 var controllerState = default(ControllerState);
 // Set up initial camera position
 unsafe {
-    ControllerReadState(controller, &controllerState);
-    var trans = Matrix4x4Extensions.CreateTranslation(0.0f, 0.0f, -3.0f);
-    CameraSetTransform(camera, &trans);
     var proj = ProjectionExtensions.CreatePerspectiveFovLH(3.14f / 2f, 800.0f/600.0f, 0.1f, 1000.0f);
     CameraSetProjection(camera, &proj);
 }
 
 // Keep the program running and process events
 Console.WriteLine("Press Ctrl+C to exit...");
-float z = -3.0f;
 while (true)
 {
-    z -= 0.01f;  // Move camera backwards
     unsafe {
-        var trans = Matrix4x4Extensions.CreateTranslation(0.0f, 0.0f, z);
-        CameraSetTransform(camera, &trans);
+        ControllerReadState(controller, &controllerState);
+        var direction = Vector3Extensions.Zero<float>();
+
+        var force = 0.01f;
+
+        direction.X += force * controllerState.leftStickX; // X+ is right
+        direction.Y += force * controllerState.leftStickY; // Y+ is forward
+
+        var rot = 3.14f / 30f;
+
+        head.X -= rot * controllerState.rightStickY;
+        head.Y -= rot * controllerState.rightStickX;
+
+        position += QuaternionExtensions.Rotate(rotation, direction);
+
+        var posMat = Matrix4x4Extensions.CreateTranslation<float>(position.X, position.Y, position.Z);
+        rotation = rotation * QuaternionExtensions.CreateFromAxisAngle<float>(Vector3Extensions.UnitX(), head[0])
+         * QuaternionExtensions.CreateFromAxisAngle<float>(Vector3Extensions.UnitZ(), head[1]);
+         head = Vector2Extensions.Zero<float>();
+        // No rotation needed for Z+ up coordinate system
+        posMat.PrintMatrix("Position Matrix");
+        var pending = rotation * QuaternionExtensions.CreateFromAxisAngle<float>(Vector3Extensions.UnitX(), -3.1415f / 2.0f);
+        var transMat = Matrix4x4Extensions.Multiply<float>(posMat, pending.ToMatrix());
+        CameraSetTransform(camera, &transMat);
+        var proj = ProjectionExtensions.CreatePerspectiveFovLH(3.14f / 2f, 800.0f/600.0f, 0.1f, 1000.0f);
+        CameraSetProjection(camera, &proj);
+
     }
     GfxRender(renderer);
     Thread.Sleep(16); // ~60 FPS
