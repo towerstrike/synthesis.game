@@ -1,0 +1,3 @@
+[submodule "vendor/vulkan"]
+	path = vendor/vulkan
+	url = https://github.com/Snektron/vulkan-zig
