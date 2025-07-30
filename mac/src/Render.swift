@@ -36,9 +36,13 @@ public class Renderer: NSObject {
         }
         NSApp.setActivationPolicy(.regular)
 
-
         device = MTLCreateSystemDefaultDevice()
         commandQueue = device?.makeCommandQueue()
+
+        // Enable GPU debugging
+        if let device = device {
+            MTLCaptureManager.shared().startCapture(device: device)
+        }
 
         // Get the path of the dylib itself
         let bundle = Bundle(for: Renderer.self)
@@ -53,19 +57,19 @@ public class Renderer: NSObject {
 
         if !FileManager.default.fileExists(atPath: shaderPath) {
             // Fallback to relative path
-            shaderPath = "src/shader.metal"
+            shaderPath = "mac/src/shader.metal"
         }
 
         print("Loading shader from: \(shaderPath)")
         let shaderSource = try! String(contentsOfFile: shaderPath, encoding: .utf8)
         let compileOptions = MTLCompileOptions()
-          compileOptions.fastMathEnabled = false
-          compileOptions.languageVersion = .version3_0
-          // Enable shader logging
-          let extraOptions = ["METAL_DEVICE_WRAPPER_TYPE": "1", "METAL_SHADER_DIAGNOSTICS": "1"]
-          compileOptions.preprocessorMacros = extraOptions as? [String: NSObject]
+        compileOptions.fastMathEnabled = false
+        compileOptions.languageVersion = .version3_0
+        // Enable shader logging
+        let extraOptions = ["METAL_DEVICE_WRAPPER_TYPE": "1", "METAL_SHADER_DIAGNOSTICS": "1"]
+        compileOptions.preprocessorMacros = extraOptions as? [String: NSObject]
 
-          let library = try! device?.makeLibrary(source: shaderSource, options: compileOptions)
+        let library = try! device?.makeLibrary(source: shaderSource, options: compileOptions)
         let objectFunction = library?.makeFunction(name: "object_main")
         let vertexFunction = library?.makeFunction(name: "mesh_main")
         let fragmentFunction = library?.makeFunction(name: "fragment_main")
@@ -75,16 +79,20 @@ public class Renderer: NSObject {
         pipelineDescriptor.objectFunction = objectFunction
         pipelineDescriptor.meshFunction = vertexFunction
         pipelineDescriptor.fragmentFunction = fragmentFunction
-        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-        pipelineDescriptor.depthAttachmentPixelFormat = .depth32Float
 
-         device.makeRenderPipelineState(descriptor:pipelineDescriptor,options: []) { (pipeline, reflection, error)
-          in
-              if let error = error {
-                  fatalError("Failed to create pipeline: \(error)")
-              }
-              self.pipelineState = pipeline!
-          }
+        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        // Disable depth for now
+        // pipelineDescriptor.depthAttachmentPixelFormat = .depth32Float
+
+        device.makeRenderPipelineState(descriptor: pipelineDescriptor, options: []) {
+            (pipeline, reflection, error)
+            in
+            if let error = error {
+                fatalError("Failed to create pipeline: \(error)")
+            }
+            self.pipelineState = pipeline!
+            print(pipeline)
+        }
         //facePipeline = try! device.makeComputePipelineState(function: faceFunction!)
 
         // Create depth stencil state
@@ -94,19 +102,21 @@ public class Renderer: NSObject {
         depthStencilState = device?.makeDepthStencilState(descriptor: depthStencilDescriptor)
 
         // Create 1GB buffer
-        let registryBufferSize = 1 * 1024 * 1024 // 1MB
-        blockRegistryBuffer = device.makeBuffer(length: registryBufferSize, options: .storageModeShared)!
+        let registryBufferSize = 1 * 1024 * 1024  // 1MB
+        blockRegistryBuffer = device.makeBuffer(
+            length: registryBufferSize, options: .storageModeShared)!
 
-        let faceBufferSize = 1 * 1024 * 1024 // 1GB
+        let faceBufferSize = 1 * 1024 * 1024  // 1GB
         blockFaceBuffer = device.makeBuffer(length: faceBufferSize, options: .storageModeShared)!
 
-        let faceDataPointer = blockFaceBuffer?.contents().bindMemory(to: FaceData.self, capacity: 1024)
-          for i in 0..<1024 {
-              faceDataPointer?[i] = FaceData(
-                  block: UInt32(i),
-                  flags: 0b00111111  // All faces exposed, or calculate based on neighbors
-              )
-          }
+        let faceDataPointer = blockFaceBuffer?.contents().bindMemory(
+            to: FaceData.self, capacity: 1024)
+        for i in 0..<1024 {
+            faceDataPointer?[i] = FaceData(
+                block: UInt32(i),
+                flags: 0b00111111  // All faces exposed, or calculate based on neighbors
+            )
+        }
         let regionSize = 64
         let workUnits = 16
 
@@ -127,7 +137,10 @@ public class Renderer: NSObject {
         view.delegate = self
         view.enableSetNeedsDisplay = true
         view.isPaused = false
-        view.depthStencilPixelFormat = .depth32Float
+        view.colorPixelFormat = .bgra8Unorm
+        // Disable depth for now
+        // view.depthStencilPixelFormat = .depth32Float
+        view.clearColor = MTLClearColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0)
         metalView = view
 
         // Create window automatically
@@ -182,6 +195,16 @@ extension Renderer: MTKViewDelegate {
             return
         }
 
+        print("=== Draw call ===")
+        print("Drawable: \(view.currentDrawable != nil ? "Available" : "Not available")")
+        print("Clear color: R=0.5 G=0.5 B=0.5")
+        print(
+            "Color attachment texture: \(renderPassDescriptor.colorAttachments[0].texture != nil ? "Available" : "Not available")"
+        )
+        print(
+            "Depth attachment texture: \(renderPassDescriptor.depthAttachment.texture != nil ? "Available" : "Not available")"
+        )
+
         // var computeEncoder = commandBuffer.makeComputeCommandEncoder()!;
 
         // computeEncoder.setComputePipelineState(facePipeline)
@@ -193,46 +216,66 @@ extension Renderer: MTKViewDelegate {
 
         // Set clear color to make sure we're rendering
         renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(
-            red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0)
+            red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
+        renderPassDescriptor.colorAttachments[0].loadAction = .clear
+        renderPassDescriptor.colorAttachments[0].storeAction = .store
+
+        // Also clear the depth buffer
+        renderPassDescriptor.depthAttachment.loadAction = .clear
+        renderPassDescriptor.depthAttachment.clearDepth = 1.0
+        renderPassDescriptor.depthAttachment.storeAction = .store
 
         renderEncoder.setRenderPipelineState(pipelineState)
-        renderEncoder.setDepthStencilState(depthStencilState)
+        // Don't set depth stencil state for now to simplify
+        // renderEncoder.setDepthStencilState(depthStencilState)
 
         var camera = primaryCamera!
-            // Create a struct that matches the shader's CameraData layout
-            struct CameraData {
-                var viewProj: float4x4
-            }
+        // Create a struct that matches the shader's CameraData layout
+        struct CameraData {
+            var viewProj: float4x4
+        }
 
-            print("View matrix: \(camera.pointee.view)")
-            print("Projection matrix: \(camera.pointee.projection)")
-            let viewProj = camera.pointee.projection * camera.pointee.view
-            print("ViewProj result: \(viewProj)")
+        print("View matrix: \(camera.pointee.view)")
+        print("Projection matrix: \(camera.pointee.projection)")
+        let viewProj = camera.pointee.projection * camera.pointee.view
+        print("ViewProj result: \(viewProj)")
 
-            // Read the camera data from the pointer
-            let cameraData = CameraData(
-                viewProj: viewProj
-            )
-
-            print("CameraData.viewProj: \(cameraData.viewProj)")
-
-            // Pass the actual struct data to Metal
-            withUnsafeBytes(of: cameraData) { bytes in
-                renderEncoder.setMeshBytes(
-                    bytes.baseAddress!, length: MemoryLayout<CameraData>.size, index: 1)
-            }
-        // Draw cube as 6 faces, each with 2 triangles (6 vertices per face using triangle list)
-
-        renderEncoder.setObjectBuffer(blockFaceBuffer, offset: 0, index: 0)
-        renderEncoder.drawMeshThreadgroups(
-            MTLSize(width: 100, height: 1, depth: 1),  // 100 voxels
-            threadsPerObjectThreadgroup: MTLSize(width: 1, height: 1, depth: 1),
-            threadsPerMeshThreadgroup: MTLSize(width: 32, height: 1, depth: 1)
+        // Read the camera data from the pointer
+        let cameraData = CameraData(
+            viewProj: viewProj
         )
+
+        print("CameraData.viewProj: \(cameraData.viewProj)")
+
+        // Pass the actual struct data to Metal
+        withUnsafeBytes(of: cameraData) { bytes in
+            renderEncoder.setMeshBytes(
+                bytes.baseAddress!, length: MemoryLayout<CameraData>.size, index: 1)
+        }
+        // Draw cube as 6 faces, each with 2 triangles (6 vertices per face using triangle list)
+        renderEncoder.setMeshBuffer(blockFaceBuffer, offset: 0, index: 0)
+
+        // Draw just 1 object that will expand to a triangle
+        print("About to draw mesh threadgroups")
+        renderEncoder.drawMeshThreadgroups(
+            MTLSize(width: 1, height: 1, depth: 1),  // 1 object
+            threadsPerObjectThreadgroup: MTLSize(width: 0, height: 0, depth: 0),
+            threadsPerMeshThreadgroup: MTLSize(width: 36, height: 1, depth: 1)
+        )
+        print("Draw mesh threadgroups called")
         renderEncoder.endEncoding()
 
         if let drawable = view.currentDrawable {
             commandBuffer.present(drawable)
+        }
+        commandBuffer.addCompletedHandler { buffer in
+            if let error = buffer.error {
+                print("Command buffer error: \(error)")
+            } else if buffer.status == .error {
+                print("Command buffer failed with unknown error")
+            } else {
+                print("Command buffer completed successfully")
+            }
         }
         commandBuffer.commit()
     }

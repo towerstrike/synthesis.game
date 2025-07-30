@@ -18,7 +18,7 @@ struct FaceData {
 //  NV - max number of vertices
 //  NP - max number of primitives
 //  t  - topology
-using Mesh = metal::mesh<Vertex, void, 36, 12, topology::triangle>;
+using Mesh = metal::mesh<Vertex, void, 24, 12, topology::triangle>;
 
 [[mesh]]
 void mesh_main(Mesh outMesh,
@@ -53,23 +53,12 @@ void mesh_main(Mesh outMesh,
                 4, 5, 7, 6
             };
             int triVertices[6] = {0,1,2,0,2,3};
-    outMesh.set_primitive_count(12); // 6 faces * 2 triangles per face
-    
-    // Calculate which face and which vertex within that face
-    uint face = lid / 6;  // 0-5 (which face)
-    uint vertexInFace = lid % 6;  // 0-5 (which vertex in the face's 2 triangles)
-    
-    // Get the vertex index from triVertices pattern
-    uint quadVertexIndex = triVertices[vertexInFace];  // 0,1,2,0,2,3 pattern
-    
-    // Get the actual cube vertex index
-    uint cubeVertexIndex = cubeIndices[face * 4 + quadVertexIndex];
-    
-    float4 outVert = camera.viewProjection * float4(cubeVertices[cubeVertexIndex], 1);
+    outMesh.set_primitive_count(24);
+    float4 outVert = camera.viewProjection * float4(cubeVertices[cubeIndices[lid]], 1);
     float3 color = float3(0);
-    color[face % 3] = 1;  // Color by face instead of vertex
+    color[lid % 3] = 1;
     outMesh.set_vertex(lid, Vertex{outVert,color});
-    outMesh.set_index(lid, lid);
+    outMesh.set_index(lid, triVertices[lid % 6]);
 }
 
 fragment float4 fragment_main(Vertex in [[stage_in]]) {
