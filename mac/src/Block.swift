@@ -16,15 +16,19 @@ public struct Chunk {
     private(set) var blocks: [Block]
 
     init() {
-        self.blocks = Array(repeating: Block(), count: 512)
+        self.blocks = Array(repeating: Block(registryIndex: 0), count: 512)
     }
 }
 
-public struct Registry {
+public class Registry {
     private var blockTypes: [Attributes] = []
     private var idToIndex: [String: Int] = [:]
 
-    mutating func register(_ attr: Attributes) {
+    public init() {
+
+    }
+
+     func register(_ attr: Attributes) {
         if let existingIndex = idToIndex[attr.id] {
             //TODO make merge
             blockTypes[existingIndex] = attr

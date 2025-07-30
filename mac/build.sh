@@ -18,6 +18,8 @@ export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 swiftc -emit-library \
     -o build/lib-synthesis.dylib \
     -Xlinker -install_name -Xlinker @rpath/lib-synthesis.dylib \
+    -target arm64-apple-macos13.0 \
+    -sdk $(xcrun --sdk macosx --show-sdk-path) \
     -framework Metal \
     -framework MetalKit \
     -framework Cocoa \
@@ -25,6 +27,7 @@ swiftc -emit-library \
     src/Lib.swift \
     src/Camera.swift \
     src/Controller.swift \
+    src/Block.swift \
     src/Render.swift
 
 # Copy shader file to build directory
