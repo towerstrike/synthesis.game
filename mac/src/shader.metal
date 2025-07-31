@@ -11,6 +11,7 @@ struct Vertex {
 struct FaceData {
     uint block;
     uint exposed;
+    uint position;
 };
 // metal::mesh<V, P, NV, NP, t>
 //  V  - vertex type (output struct)
@@ -19,6 +20,46 @@ struct FaceData {
 //  NP - max number of primitives
 //  t  - topology
 using Mesh = metal::mesh<Vertex, void, 36, 12, topology::triangle>;
+
+uint decompress(
+    uint palette_count,
+    constant uint* palette,
+    constant uint* data,
+    uint index
+) {
+    uint u32Bits = 32;
+    uint bits = uint(ceil(log2(float(palette_count))));
+    uint pos = index * bits;
+    uint outer = pos / u32Bits;
+    uint inner = pos % u32Bits;
+    uint mask = (1 << bits) - 1;
+    uint valueIndex = 0;
+    valueIndex |= (data[outer] >> inner) & mask;
+    if (pos + bits > u32Bits) {
+        uint overflow = (pos + bits) - u32Bits;
+        valueIndex |= data[outer + 1] >> (bits - overflow);
+    }
+    return palette[valueIndex];
+}
+
+kernel void face_main(
+    constant uint* palette[[buffer(0)]],
+    constant uint* data[[buffer(1)]],
+    device uint* faceDataBuffer [[buffer(2)]],
+    uint3 gid [[thread_position_in_grid]],
+    uint3 gridSize [[threads_per_grid]])
+{
+    device atomic_uint* count = (device atomic_uint*)faceDataBuffer;
+    device FaceData* faces = (device FaceData*)(&count[1]);
+
+    uint threadIndex = gid.z * gridSize.y * gridSize.x + gid.y * gridSize.x + gid.x;
+    if(decompress(2, palette, data, threadIndex) == 0) {
+        return;
+    }
+
+    uint index = atomic_fetch_add_explicit(count, 1, memory_order_relaxed);
+    faces[index] = {1, 0b11111111, threadIndex};
+}
 
 [[mesh]]
 void mesh_main(Mesh outMesh,
@@ -54,18 +95,25 @@ void mesh_main(Mesh outMesh,
             };
             int triVertices[6] = {0,1,2,0,2,3};
     outMesh.set_primitive_count(12); // 6 faces * 2 triangles per face
-    
+
     // Calculate which face and which vertex within that face
     uint face = lid / 6;  // 0-5 (which face)
+
+    if ((faceDataBuffer[gid].exposed & (1 << face)) == 0) {
+        return;
+    }
     uint vertexInFace = lid % 6;  // 0-5 (which vertex in the face's 2 triangles)
-    
+
     // Get the vertex index from triVertices pattern
     uint quadVertexIndex = triVertices[vertexInFace];  // 0,1,2,0,2,3 pattern
-    
+
     // Get the actual cube vertex index
     uint cubeVertexIndex = cubeIndices[face * 4 + quadVertexIndex];
-    
-    float4 outVert = camera.viewProjection * float4(cubeVertices[cubeVertexIndex], 1);
+
+    uint posRaw = faceDataBuffer[gid].position;
+    uint3 pos = uint3((posRaw & 63), ((posRaw >> 6) & 63), ((posRaw >> 12) & 63));
+
+    float4 outVert = camera.viewProjection * float4(cubeVertices[cubeVertexIndex] + float3(pos), 1);
     float3 color = float3(0);
     color[face % 3] = 1;  // Color by face instead of vertex
     outMesh.set_vertex(lid, Vertex{outVert,color});

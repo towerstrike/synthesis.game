@@ -6,6 +6,7 @@ import MetalKit
 struct FaceData {
     var block: UInt32
     var flags: UInt32
+    var position: UInt32
 }
 
 public class Renderer: NSObject {
@@ -17,7 +18,7 @@ public class Renderer: NSObject {
     private var window: NSWindow?
     private var primaryCamera: UnsafeMutablePointer<Camera>?
     private var blockRegistry: Registry?
-    private var blockRegistryBuffer: MTLBuffer?
+    private var blockHeap: MTLBuffer?
     private var blockFaceBuffer: MTLBuffer?
     private var blockWorkTexture: MTLTexture?
     private var generated: Bool = false
@@ -30,6 +31,12 @@ public class Renderer: NSObject {
     }
 
     private func setup() {
+
+        var block = Array.init(repeating: Block(registryIndex: 0), count: 512)
+        for i in 0..<512 {
+            block[i].registryIndex = i % 2
+        }
+        var palette = Palette(blocks: block)
         // Initialize NSApplication if needed
         if NSApp == nil {
             _ = NSApplication.shared
@@ -82,7 +89,7 @@ public class Renderer: NSObject {
 
         pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
         // Disable depth for now
-        // pipelineDescriptor.depthAttachmentPixelFormat = .depth32Float
+        pipelineDescriptor.depthAttachmentPixelFormat = .depth32Float
 
         device.makeRenderPipelineState(descriptor: pipelineDescriptor, options: []) {
             (pipeline, reflection, error)
@@ -93,7 +100,7 @@ public class Renderer: NSObject {
             self.pipelineState = pipeline!
             print(pipeline)
         }
-        //facePipeline = try! device.makeComputePipelineState(function: faceFunction!)
+        facePipeline = try! device.makeComputePipelineState(function: faceFunction!)
 
         // Create depth stencil state
         let depthStencilDescriptor = MTLDepthStencilDescriptor()
@@ -102,21 +109,20 @@ public class Renderer: NSObject {
         depthStencilState = device?.makeDepthStencilState(descriptor: depthStencilDescriptor)
 
         // Create 1GB buffer
-        let registryBufferSize = 1 * 1024 * 1024  // 1MB
-        blockRegistryBuffer = device.makeBuffer(
+        let registryBufferSize = 1 * 1024 * 1024 * 1024  // 1MB
+        blockHeap = device.makeBuffer(
             length: registryBufferSize, options: .storageModeShared)!
-
-        let faceBufferSize = 1 * 1024 * 1024  // 1GB
+        let faceDataPointer = blockHeap?.contents().bindMemory(
+            to: UInt32.self, capacity: 1024)
+        faceDataPointer?[0] = 0
+        faceDataPointer?[1] = 1
+        let compressed = palette.compressed()
+        for i in 0..<palette.count() {
+            faceDataPointer?[2 + i] = compressed[i]
+        }
+        let faceBufferSize = 1 * 1024 * 1024 * 1024  // 1GB
         blockFaceBuffer = device.makeBuffer(length: faceBufferSize, options: .storageModeShared)!
 
-        let faceDataPointer = blockFaceBuffer?.contents().bindMemory(
-            to: FaceData.self, capacity: 1024)
-        for i in 0..<1024 {
-            faceDataPointer?[i] = FaceData(
-                block: UInt32(i),
-                flags: 0b00111111  // All faces exposed, or calculate based on neighbors
-            )
-        }
         let regionSize = 64
         let workUnits = 16
 
@@ -139,8 +145,9 @@ public class Renderer: NSObject {
         view.isPaused = false
         view.colorPixelFormat = .bgra8Unorm
         // Disable depth for now
-        // view.depthStencilPixelFormat = .depth32Float
-        view.clearColor = MTLClearColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0)
+        view.depthStencilPixelFormat = .depth32Float
+        view.clearColor = MTLClearColor(
+            red: 40.0 / 256.0, green: 40.0 / 256.0, blue: 41.0 / 256.0, alpha: 1.0)
         metalView = view
 
         // Create window automatically
@@ -186,34 +193,28 @@ extension Renderer: MTKViewDelegate {
     }
 
     public func draw(in view: MTKView) {
-        guard let commandBuffer = commandQueue.makeCommandBuffer(),
-            let renderPassDescriptor = view.currentRenderPassDescriptor,
-            let renderEncoder = commandBuffer.makeRenderCommandEncoder(
-                descriptor: renderPassDescriptor)
+        guard let commandBuffer = commandQueue.makeCommandBuffer()
         else {
             print("Failed to create command buffer or render encoder")
             return
         }
 
-        print("=== Draw call ===")
-        print("Drawable: \(view.currentDrawable != nil ? "Available" : "Not available")")
-        print("Clear color: R=0.5 G=0.5 B=0.5")
-        print(
-            "Color attachment texture: \(renderPassDescriptor.colorAttachments[0].texture != nil ? "Available" : "Not available")"
-        )
-        print(
-            "Depth attachment texture: \(renderPassDescriptor.depthAttachment.texture != nil ? "Available" : "Not available")"
-        )
-
-        // var computeEncoder = commandBuffer.makeComputeCommandEncoder()!;
-
-        // computeEncoder.setComputePipelineState(facePipeline)
-        // computeEncoder.setBuffer(blockFaceBuffer, offset: 0, index: 0)
-        // computeEncoder.setTexture(blockWorkTexture, index: 0)
-        // var threadgroupsPerGrid: MTLSize = MTLSize(width:8,height:8,depth:8);
-        // var threadsPerThreadgroup: MTLSize = MTLSize(width:8,height:8,depth:8);
-        //computeEncoder.dispatchThreadgroups(threadgroupsPerGrid, threadsPerThreadgroup: threadsPerThreadgroup)
-
+        if !generated {
+            var computeEncoder = commandBuffer.makeComputeCommandEncoder()!
+            computeEncoder.setComputePipelineState(facePipeline)
+            computeEncoder.setBuffer(blockHeap, offset: 0, index: 0)
+            computeEncoder.setBuffer(blockHeap, offset: 8, index: 1)
+            computeEncoder.setBuffer(blockFaceBuffer, offset: 0, index: 2)
+            var threadgroupsPerGrid: MTLSize = MTLSize(width: 1, height: 1, depth: 1)
+            var threadsPerThreadgroup: MTLSize = MTLSize(width: 8, height: 8, depth: 8)
+            computeEncoder.dispatchThreadgroups(
+                threadgroupsPerGrid, threadsPerThreadgroup: threadsPerThreadgroup)
+            computeEncoder.endEncoding()
+            generated = true
+        }
+        let renderPassDescriptor = view.currentRenderPassDescriptor!
+        let renderEncoder = commandBuffer.makeRenderCommandEncoder(
+            descriptor: renderPassDescriptor)!
         // Set clear color to make sure we're rendering
         renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(
             red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
@@ -227,7 +228,7 @@ extension Renderer: MTKViewDelegate {
 
         renderEncoder.setRenderPipelineState(pipelineState)
         // Don't set depth stencil state for now to simplify
-        // renderEncoder.setDepthStencilState(depthStencilState)
+        renderEncoder.setDepthStencilState(depthStencilState)
 
         var camera = primaryCamera!
         // Create a struct that matches the shader's CameraData layout
@@ -253,12 +254,12 @@ extension Renderer: MTKViewDelegate {
                 bytes.baseAddress!, length: MemoryLayout<CameraData>.size, index: 1)
         }
         // Draw cube as 6 faces, each with 2 triangles (6 vertices per face using triangle list)
-        renderEncoder.setMeshBuffer(blockFaceBuffer, offset: 0, index: 0)
+        renderEncoder.setMeshBuffer(blockFaceBuffer, offset: 4, index: 0)
 
         // Draw just 1 object that will expand to a triangle
         print("About to draw mesh threadgroups")
         renderEncoder.drawMeshThreadgroups(
-            MTLSize(width: 1, height: 1, depth: 1),  // 1 object
+            MTLSize(width: 512, height: 1, depth: 1),  // 1 object
             threadsPerObjectThreadgroup: MTLSize(width: 0, height: 0, depth: 0),
             threadsPerMeshThreadgroup: MTLSize(width: 36, height: 1, depth: 1)
         )

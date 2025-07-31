@@ -28,6 +28,7 @@ swiftc -emit-library \
     src/Camera.swift \
     src/Controller.swift \
     src/Block.swift \
+    src/Palette.swift \
     src/Render.swift
 
 # Copy shader file to build directory

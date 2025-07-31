@@ -63,7 +63,7 @@ while (true)
         ControllerReadState(controller, &controllerState);
         var direction = Vector3Extensions.Zero<float>();
 
-        var force = 0.01f;
+        var force = 1.0f;
 
         direction.X += force * controllerState.leftStickX; // X+ is right
         direction.Y += force * controllerState.leftStickY; // Y+ is forward
