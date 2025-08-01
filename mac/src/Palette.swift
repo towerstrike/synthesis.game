@@ -1,34 +1,44 @@
 import Foundation
 
 public class Palette {
-    var count: UInt32
-    var palette: [UInt32]
-    var compressed: [UInt32]
+    public private(set) var count: UInt32
+    public private(set) var palette: [UInt32]
+    public private(set) var compressed: [UInt32]
 
-    static let u32Bits = UInt32(32)
+    static let reprBits = UInt32(32)
 
     public init(blocks: [Block]) {
-        self.count = blocks.count
+        self.count = UInt32(blocks.count)
+        self.palette = []
+        self.compressed = []
         for block in blocks {
-            if paletteIndex(block.registryIndex) != nil {
+            if self.paletteIndex(UInt32(block.registryIndex)) != nil {
                 continue
             }
-            palette.append(block.registryIndex)
+            palette.append(UInt32(block.registryIndex))
         }
-        compressed = Array.init(repeating: 0, count: ceil(Float(bits * count)) / u32Bits + 1)
+        var bits = UInt32(ceil(log2(Float(palette.count))))
+        compressed = Array.init(
+            repeating: 0,
+            count: Int(UInt32(ceil(Float(bits * count))) / Palette.reprBits + UInt32(1)))
         for (i, block) in blocks.enumerated() {
-            write(i, data: block.registryIndex)
+            print(i)
+            self.write(UInt32(i), data: self.paletteIndex(UInt32(block.registryIndex))!)
         }
     }
 
     public init(_ count: UInt32, palette: [Block], fill: Block) {
-        self.count += count
+        self.count = count
+        self.palette = []
         for block in palette {
-            this.palette.append(block.registryIndex)
+            self.palette.append(UInt32(block.registryIndex))
         }
-        compressed = Array.init(repeating: 0, count: ceil(Float(bits * count)) / u32Bits + 1)
+        var bits = UInt32(ceil(log2(Float(palette.count))))
+        compressed = Array.init(
+            repeating: 0,
+            count: Int(UInt32(ceil(Float(bits * count))) / Palette.reprBits + UInt32(1)))
         for i in 0..<count {
-            write(i, data: fill.registryIndex)
+            self.write(UInt32(i), data: self.paletteIndex(UInt32(fill.registryIndex))!)
         }
     }
 
@@ -41,52 +51,46 @@ public class Palette {
 
     public init(_ count: UInt32, fill: Block) {
         self.count = count
-        palette = [fill.registryIndex]
+        palette = [UInt32(fill.registryIndex)]
         compressed = []
     }
 
-    public func paletteIndex(_ data: UInt32) -> UInt32 {
+    public func paletteIndex(_ data: UInt32) -> UInt32? {
         for (i, index) in palette.enumerated() {
-            if block.registryIndex == index {
-                return i
+            if data == index {
+                return UInt32(i)
             }
         }
         return nil
     }
 
     public func write(_ index: UInt32, data: UInt32) {
-        var bits = ceil(log2(Float(palette.count)))
-        var pos = i * bits
-        var outer = Int(pos / u32Bits)
-        var inner = pos % u32Bits
-        var valueIndex = paletteIndex(data)
-        compressed[outer] |= valueIndex << inner
-        if pos + bits > u32Bits {
-            let overflow = (pos + bits) - u32Bits
-            compressed[Int(outer + 1)] |= valueIndex >> (bits - overflow)
+        var bits = UInt32(ceil(log2(Float(palette.count))))
+        var pos = index * bits
+        var outer = Int(pos / Palette.reprBits)
+        var inner = pos % Palette.reprBits
+        var valueIndex = paletteIndex(data)!
+        compressed[Int(outer)] |= valueIndex << inner
+        if pos + bits > Palette.reprBits {
+            let overflow = (pos + bits) - Palette.reprBits
+            print(inner, outer, pos, bits, overflow)
+            compressed[Int(outer + 1)] |= valueIndex >> overflow
         }
     }
 
     public func read(_ index: UInt32) -> UInt32 {
-        var bits = ceil(log2(Float(palette.count)))
-        var pos = i * bits
-        var outer = Int(pos / u32Bits)
-        var inner = pos % u32Bits
+        var bits = UInt32(ceil(log2(Float(palette.count))))
+        var pos = index * bits
+        var outer = pos / Palette.reprBits
+        var inner = pos % Palette.reprBits
         var mask = (1 << bits) - 1
-        var valueIndex = 0
-        valueIndex |= (compressed[outer] >> inner) & mask
-        if pos + bits > u32Bits {
-            let overflow = (pos + bits) - u32Bits
-            valueIndex |= compressed[Int(outer + 1)] >> (bits - overflow)
+        var valueIndex = UInt32(0)
+        valueIndex |= UInt32(compressed[Int(outer)] >> inner) & UInt32(mask)
+        if pos + bits > Palette.reprBits {
+            let overflow = (pos + bits) - Palette.reprBits
+            valueIndex |= compressed[Int(outer + 1)] >> overflow
         }
-        return palette[valueIndex]
+        return palette[Int(valueIndex)]
     }
 
-    public func compressed() -> [UInt32] {
-        return self.compressed
-    }
-
-    public func count() -> UInt32 {
-        return self.count
-    }
 }

@@ -26,6 +26,7 @@ swiftc -emit-library \
     -framework Foundation \
     src/Lib.swift \
     src/Camera.swift \
+    src/Index.swift \
     src/Controller.swift \
     src/Block.swift \
     src/Palette.swift \

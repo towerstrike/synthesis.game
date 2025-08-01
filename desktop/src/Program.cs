@@ -38,7 +38,7 @@ static unsafe extern void CameraSetTransform(IntPtr cameraPtr, Matrix4x4<float>*
   static unsafe extern void ControllerReadState(IntPtr controllerPtr, ControllerState* statePtr);
 
 
-
+Console.WriteLine("Init");
 var renderer = GfxCreate();
 var view = View(renderer, 800, 600);
 var camera = Camera();

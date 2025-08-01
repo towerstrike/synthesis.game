@@ -31,12 +31,11 @@ public class Renderer: NSObject {
     }
 
     private func setup() {
+        var air = Block(registryIndex: 0)
+        var solid = Block(registryIndex: 0)
+        var region = Region(fill: air, palette: [air, solid])
 
-        var block = Array.init(repeating: Block(registryIndex: 0), count: 512)
-        for i in 0..<512 {
-            block[i].registryIndex = i % 2
-        }
-        var palette = Palette(blocks: block)
+        print(region)
         // Initialize NSApplication if needed
         if NSApp == nil {
             _ = NSApplication.shared
@@ -116,10 +115,16 @@ public class Renderer: NSObject {
             to: UInt32.self, capacity: 1024)
         faceDataPointer?[0] = 0
         faceDataPointer?[1] = 1
-        let compressed = palette.compressed()
-        for i in 0..<palette.count() {
-            faceDataPointer?[2 + i] = compressed[i]
+        let compressed = 64 * 64 * 64
+        var query: [UInt32] = []
+        for i in 0..<64 * 64 * 64 {
+            query.append(UInt32(i))
         }
+        var blocks =
+            region.get(blocks: query)
+
+        print(blocks[0], blocks[6])
+
         let faceBufferSize = 1 * 1024 * 1024 * 1024  // 1GB
         blockFaceBuffer = device.makeBuffer(length: faceBufferSize, options: .storageModeShared)!
 
@@ -205,7 +210,7 @@ extension Renderer: MTKViewDelegate {
             computeEncoder.setBuffer(blockHeap, offset: 0, index: 0)
             computeEncoder.setBuffer(blockHeap, offset: 8, index: 1)
             computeEncoder.setBuffer(blockFaceBuffer, offset: 0, index: 2)
-            var threadgroupsPerGrid: MTLSize = MTLSize(width: 1, height: 1, depth: 1)
+            var threadgroupsPerGrid: MTLSize = MTLSize(width: 8, height: 8, depth: 8)
             var threadsPerThreadgroup: MTLSize = MTLSize(width: 8, height: 8, depth: 8)
             computeEncoder.dispatchThreadgroups(
                 threadgroupsPerGrid, threadsPerThreadgroup: threadsPerThreadgroup)
@@ -259,7 +264,7 @@ extension Renderer: MTKViewDelegate {
         // Draw just 1 object that will expand to a triangle
         print("About to draw mesh threadgroups")
         renderEncoder.drawMeshThreadgroups(
-            MTLSize(width: 512, height: 1, depth: 1),  // 1 object
+            MTLSize(width: 60000, height: 1, depth: 1),  // 1 object
             threadsPerObjectThreadgroup: MTLSize(width: 0, height: 0, depth: 0),
             threadsPerMeshThreadgroup: MTLSize(width: 36, height: 1, depth: 1)
         )
