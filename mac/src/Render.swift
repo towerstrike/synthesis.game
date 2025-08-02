@@ -34,7 +34,26 @@ public class Renderer: NSObject {
         var air = Block(registryIndex: 0)
         var solid = Block(registryIndex: 0)
         var region = Region(fill: air, palette: [air, solid])
+        let semaphore = DispatchSemaphore(value: 0)
+        Task {
+            do {
+                var tree = Tree()
+                    .onLoad { (morton, lod) in
+                        print("leafs")
+                        print(morton)
+                        print(lod)
+                    }
+                await tree.refresh(pos: [0, 0, 0], view: 10)
+                print(tree)
+                semaphore.signal()
+            } catch let error as NSError {
+                print("Error: \(error.domain)")
+                print(Thread.callStackSymbols)
+            }
+        }
 
+        semaphore.wait()
+        exit(0)
         print(region)
         // Initialize NSApplication if needed
         if NSApp == nil {

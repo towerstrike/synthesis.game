@@ -25,9 +25,11 @@ swiftc -emit-library \
     -framework Cocoa \
     -framework Foundation \
     src/Lib.swift \
+    src/Big.swift \
     src/Camera.swift \
     src/Index.swift \
     src/Controller.swift \
+    src/Tree.swift \
     src/Block.swift \
     src/Palette.swift \
     src/Render.swift
