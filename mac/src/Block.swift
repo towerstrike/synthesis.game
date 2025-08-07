@@ -28,21 +28,38 @@ public struct Chunk {
 
     public mutating func set(blocks: [UInt32: Block]) {
         var invalid = false
-        var set: [Block] = []
-        for (index, block) in blocks {
+        var allBlockTypes: Set<Int> = []
+
+        // Check if we need to update the palette
+        for (_, block) in blocks {
+            allBlockTypes.insert(block.registryIndex)
             if palette.paletteIndex(UInt32(block.registryIndex)) == nil {
-                set.append(block)
                 invalid = true
-                break
             }
         }
+
+        // If palette is missing some blocks, recreate it with all needed blocks
         if invalid {
-            if let firstBlock = blocks.values.first {
-                self = Chunk(firstBlock, palette: set)
+            // Get existing palette entries
+            var paletteBlocks: [Block] = palette.palette.map { Block(registryIndex: Int($0)) }
+
+            // Add new block types that aren't in the palette
+            for registryIndex in allBlockTypes {
+                if palette.paletteIndex(UInt32(registryIndex)) == nil {
+                    paletteBlocks.append(Block(registryIndex: registryIndex))
+                }
             }
+
+            // Create new palette with all blocks
+            let newPalette = Palette(512, palette: paletteBlocks, fill: Block(registryIndex: 0))
+            self.palette = newPalette
         }
+
+        // Now write the blocks - all should have valid palette indices
         for (index, block) in blocks {
-            palette.write(index, data: UInt32(block.registryIndex))
+            if let paletteIdx = palette.paletteIndex(UInt32(block.registryIndex)) {
+                palette.write(index, data: paletteIdx)
+            }
         }
     }
 
@@ -73,7 +90,12 @@ public class Region {
         }
 
         for (chunk, blocks) in sub {
-            chunks[chunk].set(blocks: blocks)
+            guard chunk >= 0 && chunk < chunks.count else {
+                continue
+            }
+            var mutableChunk = chunks[chunk]
+            mutableChunk.set(blocks: blocks)
+            chunks[chunk] = mutableChunk
         }
     }
 
@@ -82,7 +104,6 @@ public class Region {
 
         for index in blocks {
             var (local, regional) = IndexConverter.chunkInRegionIndex(Int(index))
-            print(local, regional)
             var inner = sub[Int(regional)] ?? []
             inner.append(local)
             sub[Int(regional)] = inner

@@ -27,6 +27,11 @@ uint decompress(
     constant uint* data,
     uint index
 ) {
+    // Handle single-palette case
+    if (palette_count == 1) {
+        return palette[0];
+    }
+    
     uint u32Bits = 32;
     uint bits = uint(ceil(log2(float(palette_count))));
     uint pos = index * bits;
@@ -35,30 +40,98 @@ uint decompress(
     uint mask = (1 << bits) - 1;
     uint valueIndex = 0;
     valueIndex |= (data[outer] >> inner) & mask;
-    if (pos + bits > u32Bits) {
-        uint overflow = (pos + bits) - u32Bits;
-        valueIndex |= data[outer + 1] & (mask >> overflow);
+    if (inner + bits > u32Bits) {
+        uint overflow = (inner + bits) - u32Bits;
+        valueIndex |= (data[outer + 1] & ((1 << overflow) - 1)) << (bits - overflow);
     }
     return palette[valueIndex];
 }
 
+uint block_type(constant uint* heap, constant uint* heapIndex, uint3 gid, uint3 tgid) {
+  uint axisChunks = 8;
+    uint axisBlocks = 8;
+
+    // Each threadgroup processes one chunk
+    // gid is the chunk position in the region (8x8x8 chunks)
+    // Match IndexConverter.index3Dto1D: x + y * width + z * width * height
+    uint chunkIndex = gid.x + (gid.y * axisChunks) + (gid.z * axisChunks * axisChunks);
+    
+    // tgid is the block position within the chunk (8x8x8 blocks)
+    // Match IndexConverter.index3Dto1D: x + y * width + z * width * height
+    uint blockIndexInChunk = tgid.x + (tgid.y * axisBlocks) + (tgid.z * axisBlocks * axisBlocks);
+
+    // Get chunk data from the allocation table
+    uint palette_count = heapIndex[chunkIndex * 3 + 0];
+    uint palette_offset = heapIndex[chunkIndex * 3 + 1];
+    uint data_offset = heapIndex[chunkIndex * 3 + 2];
+    
+    constant uint* palette = (constant uint*)(&heap[palette_offset]);
+    constant uint* data = (constant uint*)(&heap[data_offset]);
+
+    uint blockType = decompress(palette_count, palette, data, blockIndexInChunk);
+    
+    return blockType;
+}
+
 kernel void face_main(
-    constant uint* palette[[buffer(0)]],
-    constant uint* data[[buffer(1)]],
+    constant uint* heap[[buffer(0)]],
+    constant uint& heapIndexOffset [[buffer(1)]],
     device uint* faceDataBuffer [[buffer(2)]],
-    uint3 gid [[thread_position_in_grid]],
-    uint3 gridSize [[threads_per_grid]])
+    uint3 threadPos [[thread_position_in_grid]])
 {
+    constant uint* heapIndex = (constant uint*)(&heap[heapIndexOffset]);
+    
     device atomic_uint* count = (device atomic_uint*)faceDataBuffer;
     device FaceData* faces = (device FaceData*)(&count[1]);
 
-    uint threadIndex = gid.z * gridSize.y * gridSize.x + gid.y * gridSize.x + gid.x;
-    if(decompress(2, palette, data, threadIndex) == 0) {
-        return;
+    uint axisBlocks = 8;
+    uint blockType = block_type(heap, heapIndex, threadPos / 8, threadPos % 8);
+    if (blockType == 0) {
+        return; // Air block, skip
     }
 
+    uint globalX = threadPos.x;
+    uint globalY = threadPos.y;
+    uint globalZ = threadPos.z;
+
+    uint exposed = 0;
+    uint face = 0;
+    for (int d = 0; d < 3; d++) {
+      for(int i = -1; i <= 1; i += 2) {
+        uint current = face;
+        face += 1;
+        int3 neighbor = int3(globalX, globalY, globalZ);
+        neighbor[d] += i;
+        
+        bool out_of_bounds = false;
+        for(int d2 = 0; d2< 3; d2++) {
+        if(neighbor[d2] < 0 || neighbor[d2] >= 64) {
+          out_of_bounds = true;
+          break;
+        }
+        } 
+        if(out_of_bounds) {
+          exposed |= 1 << current;  // Boundary face is exposed
+          continue;
+        }
+
+        uint3 neighborPos = uint3(neighbor.x, neighbor.y, neighbor.z);
+        uint3 chunkPos = neighborPos / 8;
+        uint3 blockPos = neighborPos % 8;
+        
+        uint neighborBlockType = block_type(heap, heapIndex, chunkPos, blockPos);
+        if (neighborBlockType == 0) {
+          exposed |= 1 << current; // Air block, face is exposed
+        }
+      }
+    }
+
+
+    // Calculate the global position of this block in the region
+        uint position = (globalX & 63) | ((globalY & 63) << 6) | ((globalZ & 63) << 12);
+
     uint index = atomic_fetch_add_explicit(count, 1, memory_order_relaxed);
-    faces[index] = {1, 0b11111111, threadIndex};
+    faces[index] = {blockType, exposed, position};
 }
 
 [[mesh]]

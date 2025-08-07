@@ -18,43 +18,21 @@ public class Renderer: NSObject {
     private var window: NSWindow?
     private var primaryCamera: UnsafeMutablePointer<Camera>?
     private var blockRegistry: Registry?
-    private var blockHeap: MTLBuffer?
     private var blockFaceBuffer: MTLBuffer?
     private var blockWorkTexture: MTLTexture?
     private var generated: Bool = false
     private var facePipeline: MTLComputePipelineState!
+    private var gpu: Gpu
+    private var chunkAllocations: [ChunkAllocation]
+    private var chunkAllocationIndex: Allocator.Allocation?
 
-    public override init() {
-        super.init()
-        blockRegistry = Registry()
-        setup()
+    public struct ChunkAllocation {
+        let paletteCount: UInt32
+        let paletteOffset: UInt32
+        let compressedOffset: UInt32
     }
 
-    private func setup() {
-        var air = Block(registryIndex: 0)
-        var solid = Block(registryIndex: 0)
-        var region = Region(fill: air, palette: [air, solid])
-        let semaphore = DispatchSemaphore(value: 0)
-        Task {
-            do {
-                var tree = Tree()
-                    .onLoad { (morton, lod) in
-                        print("leafs")
-                        print(morton)
-                        print(lod)
-                    }
-                await tree.refresh(pos: [0, 0, 0], view: 10)
-                print(tree)
-                semaphore.signal()
-            } catch let error as NSError {
-                print("Error: \(error.domain)")
-                print(Thread.callStackSymbols)
-            }
-        }
-
-        semaphore.wait()
-        exit(0)
-        print(region)
+    public override init() {
         // Initialize NSApplication if needed
         if NSApp == nil {
             _ = NSApplication.shared
@@ -68,6 +46,21 @@ public class Renderer: NSObject {
         if let device = device {
             MTLCaptureManager.shared().startCapture(device: device)
         }
+
+        gpu = Gpu(device: device)
+        self.chunkAllocations = []
+        super.init()
+
+        blockRegistry = Registry()
+
+        setup()
+    }
+
+    private func setup() {
+        var air = Block(registryIndex: 0)
+        var solid = Block(registryIndex: 1)
+        var semaphore = DispatchSemaphore(value: 0)
+        var region = Region(fill: air, palette: [air])
 
         // Get the path of the dylib itself
         let bundle = Bundle(for: Renderer.self)
@@ -90,6 +83,7 @@ public class Renderer: NSObject {
         let compileOptions = MTLCompileOptions()
         compileOptions.fastMathEnabled = false
         compileOptions.languageVersion = .version3_0
+
         // Enable shader logging
         let extraOptions = ["METAL_DEVICE_WRAPPER_TYPE": "1", "METAL_SHADER_DIAGNOSTICS": "1"]
         compileOptions.preprocessorMacros = extraOptions as? [String: NSObject]
@@ -120,32 +114,112 @@ public class Renderer: NSObject {
         }
         facePipeline = try! device.makeComputePipelineState(function: faceFunction!)
 
+        Task {
+            do {
+                var tree = Tree()
+                    .onLoad { (morton, lod) in
+                        let deez = Morton.decode(dim: 3, base: 2, morton.repr)
+                        // Scale the position by the node's level to get actual voxel coordinates
+                        // At level n, each morton unit represents 2^n voxels
+                        let nodeSize = 1 << morton.level
+                        let voxelX = Int(deez[0]) * nodeSize
+                        let voxelY = Int(deez[1]) * nodeSize
+                        let voxelZ = Int(deez[2]) * nodeSize
+
+                        // Place blocks to outline the node boundaries
+                        // This will help visualize the different LOD levels
+                        var blocksToPlace: [UInt32: Block] = [:]
+
+                        // Place blocks along edges of the node to show its size
+                        // We'll place blocks at corners and some edge midpoints
+                        let step = max(1, nodeSize / 4)  // Sample points along edges
+
+                        for i in stride(from: 0, to: nodeSize, by: step) {
+                            // Bottom face edges
+                            if let idx = IndexConverter.safeIndex3Dto1D(
+                                x: voxelX + i, y: voxelY, z: voxelZ, width: 64, height: 64,
+                                depth: 64)
+                            {
+                                blocksToPlace[UInt32(idx)] = solid
+                            }
+                            if let idx = IndexConverter.safeIndex3Dto1D(
+                                x: voxelX, y: voxelY + i, z: voxelZ, width: 64, height: 64,
+                                depth: 64)
+                            {
+                                blocksToPlace[UInt32(idx)] = solid
+                            }
+                            if let idx = IndexConverter.safeIndex3Dto1D(
+                                x: voxelX, y: voxelY, z: voxelZ + i, width: 64, height: 64,
+                                depth: 64)
+                            {
+                                blocksToPlace[UInt32(idx)] = solid
+                            }
+
+                            // Top face edges (only corners to avoid too many blocks)
+                            if i == 0 || i >= nodeSize - step {
+                                if let idx = IndexConverter.safeIndex3Dto1D(
+                                    x: voxelX + i, y: voxelY + nodeSize - 1,
+                                    z: voxelZ + nodeSize - 1, width: 64, height: 64, depth: 64)
+                                {
+                                    blocksToPlace[UInt32(idx)] = solid
+                                }
+                            }
+                        }
+
+                        print(
+                            "Placing \(blocksToPlace.count) blocks for node at morton \(deez) level \(morton.level) size \(nodeSize)"
+                        )
+                        region.set(blocks: blocksToPlace)
+                    }
+                // Use position [1, 1, 1] in tree space (which maps to 8,8,8 in voxel space at level 3)
+                await tree.refresh(pos: [1, 1, 1], view: 0.1)
+                print(tree)
+            } catch let error as NSError {
+                print("Error: \(error.domain)")
+                print(Thread.callStackSymbols)
+            }
+            for i in 0..<region.chunks.count {
+                let paletteArray = region.chunks[i].palette.palette
+                let compressedArray = region.chunks[i].palette.compressed
+                let paletteCount = paletteArray.count
+
+                // Store the allocations with proper offset calculation
+                let palette = await gpu.alloc(array: paletteArray)
+                let compressed = await gpu.alloc(array: compressedArray)
+
+                // The offsets need to be in terms of UInt32 indices, not byte offsets
+                let paletteOffsetInUInt32s = UInt32(palette.offset / MemoryLayout<UInt32>.size)
+                let compressedOffsetInUInt32s = UInt32(
+                    compressed.offset / MemoryLayout<UInt32>.size)
+
+                chunkAllocations.append(
+                    ChunkAllocation(
+                        paletteCount: UInt32(paletteCount),
+                        paletteOffset: paletteOffsetInUInt32s,
+                        compressedOffset: compressedOffsetInUInt32s))
+            }
+            chunkAllocationIndex = await gpu.alloc(array: chunkAllocations)
+
+            semaphore.signal()
+        }
+        semaphore.wait()
+
         // Create depth stencil state
         let depthStencilDescriptor = MTLDepthStencilDescriptor()
         depthStencilDescriptor.depthCompareFunction = .less
         depthStencilDescriptor.isDepthWriteEnabled = true
         depthStencilState = device?.makeDepthStencilState(descriptor: depthStencilDescriptor)
-
         // Create 1GB buffer
         let registryBufferSize = 1 * 1024 * 1024 * 1024  // 1MB
-        blockHeap = device.makeBuffer(
-            length: registryBufferSize, options: .storageModeShared)!
-        let faceDataPointer = blockHeap?.contents().bindMemory(
-            to: UInt32.self, capacity: 1024)
-        faceDataPointer?[0] = 0
-        faceDataPointer?[1] = 1
-        let compressed = 64 * 64 * 64
-        var query: [UInt32] = []
-        for i in 0..<64 * 64 * 64 {
-            query.append(UInt32(i))
-        }
-        var blocks =
-            region.get(blocks: query)
 
-        print(blocks[0], blocks[6])
+        // Allocate buffer for face data - first uint32 is count, then FaceData array
+        let maxFaces = 100000
+        let faceDataSize = MemoryLayout<UInt32>.size + (MemoryLayout<FaceData>.size * maxFaces)
+        blockFaceBuffer = device.makeBuffer(length: faceDataSize, options: .storageModeShared)
 
-        let faceBufferSize = 1 * 1024 * 1024 * 1024  // 1GB
-        blockFaceBuffer = device.makeBuffer(length: faceBufferSize, options: .storageModeShared)!
+        // Initialize count to 0
+        let countPtr = blockFaceBuffer!.contents().bindMemory(to: UInt32.self, capacity: 1)
+        countPtr.pointee = 0
 
         let regionSize = 64
         let workUnits = 16
@@ -223,11 +297,17 @@ extension Renderer: MTKViewDelegate {
             return
         }
 
+        gpu.upload(commandBuffer: commandBuffer)
+
         if !generated {
+            let heapIndexOffset = UInt32(chunkAllocationIndex!.offset / MemoryLayout<UInt32>.size)
             var computeEncoder = commandBuffer.makeComputeCommandEncoder()!
             computeEncoder.setComputePipelineState(facePipeline)
-            computeEncoder.setBuffer(blockHeap, offset: 0, index: 0)
-            computeEncoder.setBuffer(blockHeap, offset: 8, index: 1)
+            computeEncoder.setBuffer(gpu.buffer, offset: 0, index: 0)
+            withUnsafeBytes(of: heapIndexOffset) { bytes in
+                computeEncoder.setBytes(
+                    bytes.baseAddress!, length: MemoryLayout<UInt32>.size, index: 1)
+            }
             computeEncoder.setBuffer(blockFaceBuffer, offset: 0, index: 2)
             var threadgroupsPerGrid: MTLSize = MTLSize(width: 8, height: 8, depth: 8)
             var threadsPerThreadgroup: MTLSize = MTLSize(width: 8, height: 8, depth: 8)

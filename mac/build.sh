@@ -26,6 +26,9 @@ swiftc -emit-library \
     -framework Foundation \
     src/Lib.swift \
     src/Big.swift \
+    src/Gpu.swift \
+    src/Staging.swift \
+    src/Alloc.swift \
     src/Camera.swift \
     src/Index.swift \
     src/Controller.swift \

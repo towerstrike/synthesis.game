@@ -22,8 +22,11 @@ public class Palette {
             repeating: 0,
             count: Int(UInt32(ceil(Float(bits * count))) / Palette.reprBits + UInt32(1)))
         for (i, block) in blocks.enumerated() {
-            print(i)
-            self.write(UInt32(i), data: self.paletteIndex(UInt32(block.registryIndex))!)
+            if let index = self.paletteIndex(UInt32(block.registryIndex)) {
+                self.write(UInt32(i), data: index)
+            } else {
+                preconditionFailure("palette index should exist 1")
+            }
         }
     }
 
@@ -38,7 +41,11 @@ public class Palette {
             repeating: 0,
             count: Int(UInt32(ceil(Float(bits * count))) / Palette.reprBits + UInt32(1)))
         for i in 0..<count {
-            self.write(UInt32(i), data: self.paletteIndex(UInt32(fill.registryIndex))!)
+            if let index = self.paletteIndex(UInt32(fill.registryIndex)) {
+                self.write(UInt32(i), data: index)
+            } else {
+                preconditionFailure("palette index should exist 1")
+            }
         }
     }
 
@@ -52,7 +59,9 @@ public class Palette {
     public init(_ count: UInt32, fill: Block) {
         self.count = count
         palette = [UInt32(fill.registryIndex)]
-        compressed = []
+        // For single palette, we don't need compressed data since all blocks are the same
+        // But we need to allocate at least one uint32 for the shader to read
+        compressed = [0]
     }
 
     public func paletteIndex(_ data: UInt32) -> UInt32? {
@@ -65,20 +74,25 @@ public class Palette {
     }
 
     public func write(_ index: UInt32, data: UInt32) {
+        if palette.count == 1 {
+            return  // Single palette, nothing to write
+        }
         var bits = UInt32(ceil(log2(Float(palette.count))))
         var pos = index * bits
         var outer = Int(pos / Palette.reprBits)
         var inner = pos % Palette.reprBits
         var valueIndex = paletteIndex(data)!
         compressed[Int(outer)] |= valueIndex << inner
-        if pos + bits > Palette.reprBits {
-            let overflow = (pos + bits) - Palette.reprBits
-            print(inner, outer, pos, bits, overflow)
-            compressed[Int(outer + 1)] |= valueIndex >> overflow
+        if inner + bits > Palette.reprBits {
+            let overflow = (inner + bits) - Palette.reprBits
+            compressed[Int(outer + 1)] |= valueIndex >> (bits - overflow)
         }
     }
 
     public func read(_ index: UInt32) -> UInt32 {
+        if palette.count == 1 {
+            return palette[0]
+        }
         var bits = UInt32(ceil(log2(Float(palette.count))))
         var pos = index * bits
         var outer = pos / Palette.reprBits
@@ -86,9 +100,9 @@ public class Palette {
         var mask = (1 << bits) - 1
         var valueIndex = UInt32(0)
         valueIndex |= UInt32(compressed[Int(outer)] >> inner) & UInt32(mask)
-        if pos + bits > Palette.reprBits {
-            let overflow = (pos + bits) - Palette.reprBits
-            valueIndex |= compressed[Int(outer + 1)] >> overflow
+        if inner + bits > Palette.reprBits {
+            let overflow = (inner + bits) - Palette.reprBits
+            valueIndex |= (compressed[Int(outer + 1)] & ((1 << overflow) - 1)) << (bits - overflow)
         }
         return palette[Int(valueIndex)]
     }
