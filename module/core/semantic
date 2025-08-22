@@ -1,0 +1,3 @@
+export module semantic;
+
+// move, forward, exchange for efficient object transfers

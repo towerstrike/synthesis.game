@@ -1,0 +1,11 @@
+[binaries]
+c = '/opt/homebrew/bin/clang'
+cpp = '/opt/homebrew/bin/clang++'
+ar = '/opt/homebrew/bin/llvm-ar'
+strip = '/opt/homebrew/bin/llvm-strip'
+
+[host_machine]
+system = 'darwin'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'

@@ -1,0 +1,68 @@
+
+
+export module fp;
+import module type;
+
+// Floating-point algebra and transcendental functions for rendering calculations
+namespace fp
+{
+	// Basic functions
+	export unit add(f32* lhs, f32* rhs, f32* result, usize count);
+	export unit sub(f32* lhs, f32* rhs, f32* result, usize count);
+	export unit mul(f32* lhs, f32* rhs, f32* result, usize count);
+	export unit div(f32* lhs, f32* rhs, f32* result, usize count);
+	export unit mod(f32* lhs, f32* rhs, f32* result, usize count);
+	export unit sqrt(f32* scalar, f32* result, usize count);
+
+	export unit mul_add(f32* lhs, f32* rhs, f32* accum, f32* result, usize count);
+	export unit absolute(f32* scalar, f32* result, usize count);
+	export unit minimum(f32* lhs, f32* rhs, f32* result, usize count);
+	export unit maximum(f32* lhs, f32* rhs, f32* result, usize count);
+	export unit clamp(f32* scalar, f32* min, f32* max, f32* result, usize count);
+	export unit reciprocal(f32* scalar, f32* result, usize count);
+	export unit rev_sqrt(f32* scalar, f32* result, usize count);
+
+	// Transcendental functions
+	export unit sine(f32* scalar, f32* result, usize count);
+	export unit cosine(f32* scalar, f32* result, usize count);
+	export unit tangent(f32* scalar, f32* result, usize count);
+	export unit arc_sine(f32* scalar, f32* result, usize count);
+	export unit arc_cosine(f32* scalar, f32* result, usize count);
+	export unit arc_tangent(f32* scalar, f32* result, usize count);
+	export unit exponential(f32* scalar, f32* result, usize count);
+
+	export unit power(f32* base, f32* exponent, f32* result, usize count);
+	export unit log_natural(f32* scalar, f32* result, usize count);
+	export unit log_base_ten(f32* scalar, f32* result, usize count);
+	export unit log_base_two(f32* scalar, f32* result, usize count);
+
+	// Vector-only functions
+	export unit dot_product(f32* lhs, f32* rhs, f32* result, usize dimensions);
+	export unit cross_product(f32* lhs, f32* rhs, f32* result, usize dimensions);
+	export unit normalize(f32* scalar, f32* result, usize dimensions);
+	export unit length(f32* scalar, f32* result, usize dimensions);
+
+	export unit reflect(f32* incident, f32* normal, f32* result, usize dimensions);
+	export unit refract(f32* incident, f32* normal, f32* eta, f32* result, usize dimensions);
+	export unit distance(f32* lhs, f32* rhs, f32* result, usize dimensions);
+
+	// Comparison functions
+	export unit equal(f32* lhs, f32* rhs, f32* result, usize count);
+	export unit not_equal(f32* lhs, f32* rhs, f32* result, usize count);
+	export unit less(f32* lhs, f32* rhs, f32* result, usize count);
+	export unit greater(f32* lhs, f32* rhs, f32* result, usize count);
+	export unit is_nan(f32* scalar, f32* result, usize count);
+	export unit is_inf(f32* scalar, f32* result, usize count);
+
+	export unit lerp(f32* start, f32* end, f32* t, f32* result, usize count);
+	export unit step(f32* edge, f32* x, f32* result, usize count);
+
+	export unit floor(f32* scalar, f32* result, usize count);
+	export unit ceiling(f32* scalar, f32* result, usize count);
+	export unit round(f32* scalar, f32* result, usize count);
+	export unit truncate(f32* scalar, f32* result, usize count);
+	export unit fraction(f32* scalar, f32* result, usize count);
+
+	export unit sign(f32* scalar, f32* result, usize count);
+
+} // namespace fp

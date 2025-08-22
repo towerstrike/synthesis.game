@@ -1,0 +1,2 @@
+export module meta;
+// integral, constructible_from, invocable for template constraints

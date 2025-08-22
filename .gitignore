@@ -1,0 +1,63 @@
+# Build directories
+build/
+.build/
+*/target/
+target/
+bin/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+Session.vim
+.session
+.nvimlog
+.netrwhist
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Compilation artifacts
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# Meson files
+.mesonpy-*
+meson-logs/
+meson-private/
+
+# Language-specific
+*/.zig-cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Tools and temporary files
+.aider*
+AGENTS.md
+*.tmp
+*.temp
+*.log
+
+# Project-specific artifacts
+synthesis
+synthesis.exe
+.session.vim
+.sessions
+.session*

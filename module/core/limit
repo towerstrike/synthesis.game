@@ -1,0 +1,3 @@
+export module limit;
+
+// numeric_limits for type min/max values and properties

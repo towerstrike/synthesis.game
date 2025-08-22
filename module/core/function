@@ -1,0 +1,3 @@
+export module function;
+
+// function objects, lambdas, and callable wrappers

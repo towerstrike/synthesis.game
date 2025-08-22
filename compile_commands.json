@@ -1,0 +1,227 @@
+[
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/result",
+    "file": "module/core/result"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/box",
+    "file": "module/core/box"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/net",
+    "file": "module/core/net"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/alloc",
+    "file": "module/core/alloc"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/limit",
+    "file": "module/core/limit"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/udp",
+    "file": "module/core/udp"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/file",
+    "file": "module/core/file"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/hash",
+    "file": "module/core/hash"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/slice",
+    "file": "module/core/slice"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/path",
+    "file": "module/core/path"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/stream",
+    "file": "module/core/stream"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/platform",
+    "file": "module/core/platform"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/io",
+    "file": "module/core/io"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/meta",
+    "file": "module/core/meta"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/function",
+    "file": "module/core/function"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/algorithm",
+    "file": "module/core/algorithm"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/atomic",
+    "file": "module/core/atomic"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/math",
+    "file": "module/core/math"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/time",
+    "file": "module/core/time"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/optional",
+    "file": "module/core/optional"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/deque",
+    "file": "module/core/deque"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/iterator",
+    "file": "module/core/iterator"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/map",
+    "file": "module/core/map"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/type",
+    "file": "module/core/type"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/span",
+    "file": "module/core/span"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/tcp",
+    "file": "module/core/tcp"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/list",
+    "file": "module/core/list"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/trait",
+    "file": "module/core/trait"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/compare",
+    "file": "module/core/compare"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/semantic",
+    "file": "module/core/semantic"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/format",
+    "file": "module/core/format"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/binary",
+    "file": "module/core/binary"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/string",
+    "file": "module/core/string"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/ring",
+    "file": "module/core/ring"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/set",
+    "file": "module/core/set"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/random",
+    "file": "module/core/random"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/fs",
+    "file": "module/core/fs"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/thread",
+    "file": "module/core/thread"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/rc",
+    "file": "module/core/rc"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/error",
+    "file": "module/core/error"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/str",
+    "file": "module/core/str"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/console",
+    "file": "module/core/console"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/buffer",
+    "file": "module/core/buffer"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c module/core/pair",
+    "file": "module/core/pair"
+  },
+  {
+    "directory": "/Users/sol/Documents/synthesis.game",
+    "command": "/opt/homebrew/bin/clang++ -std=c++20 -I/Users/sol/Documents/synthesis.game -I/Users/sol/Documents/synthesis.game/module -I/Users/sol/Documents/synthesis.game/src -c src/main",
+    "file": "src/main"
+  }
+]

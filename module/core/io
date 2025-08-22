@@ -1,0 +1,3 @@
+export module io;
+
+// basic I/O interface and common operations
