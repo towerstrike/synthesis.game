@@ -1,0 +1,8 @@
+# C++ module interface units (no extensions)
+module/* linguist-language=C++
+
+# C++ implementation files (no extensions)
+src/* linguist-language=C++
+
+# C++ header files (no extensions)
+include/* linguist-language=C++
