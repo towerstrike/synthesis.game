@@ -1,0 +1,93 @@
+export module platform;
+import trait;
+
+enum class Arch
+{
+	x86,
+	arm,
+	other
+};
+
+enum class Os
+{
+	linux,
+	mac,
+	windows,
+	other
+};
+
+enum Endian
+{
+	little,
+	big
+};
+
+struct Platform
+{
+	Arch arch;
+	Os os;
+	Endian endian;
+	bool is_64bit;
+};
+
+// Architecture
+#if defined(__x86_64__) || defined(_M_X64)
+#define __arch__ Arch::x86
+#define __is_64bit__ true
+#elif defined(__i386__) || defined(_M_IX86)
+#define __arch__ Arch::x86
+#define __is_64bit__ false
+#elif defined(__aarch64__) || defined(_M_ARM64)
+#define __arch__ Arch::arm
+#define __is_64bit__ true
+#elif defined(__arm__) || defined(_M_ARM)
+#define __arch__ Arch::arm
+#define __is_64bit__ false
+#else
+#define __arch__ Arch::other
+#define __is_64bit__ (sizeof(void*) == 8)
+#endif
+
+// OS
+#ifdef __linux__
+#define __os__ Os::linux
+#elif defined(__APPLE__)
+#define __os__ Os::mac
+#elif defined(_WIN32)
+#define __os__ Os::windows
+#else
+#define __os__ Os::other
+#endif
+
+// Endianness
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define __endian__ Endian::little
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define __endian__ Endian::big
+#else
+#define __endian__ Endian::little
+#endif
+
+export constexpr Platform PLATFORM{__arch__, __os__, __endian__, __is_64bit__};
+
+// TODO: Add profiling support to track branch prediction accuracy
+// TODO: Support MSVC [[likely]]/[[unlikely]] attributes for cross-compiler compatibility
+// TODO: Support probability values for fine-grained likelihood hints
+export template <typename value_type>
+	requires is_integral<value_type>
+constexpr value_type expect(value_type value, value_type expected) noexcept
+{
+	return static_cast<value_type>(__builtin_expect(static_cast<u64>(value), static_cast<u64>(expected)));
+}
+
+export constexpr bool likely(bool condition) noexcept
+{
+	return expect(condition, true);
+}
+
+export constexpr bool unlikely(bool condition) noexcept
+{
+	return expect(condition, false);
+}
+
+// Keep macros defined for other modules to use

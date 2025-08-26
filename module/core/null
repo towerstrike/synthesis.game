@@ -1,0 +1,194 @@
+export module core.null;
+import core.type;
+import core.trait;
+import core.platform;
+
+export struct nil {
+    constexpr nil() noexcept = default;
+    constexpr nil(decltype(nullptr)) noexcept {}
+    
+    constexpr bool operator==(const nil&) const noexcept { return true; }
+    constexpr bool operator!=(const nil&) const noexcept { return false; }
+    
+    template<typename T>
+    constexpr bool operator==(const T*) const noexcept { return false; }
+    
+    template<typename T>
+    constexpr bool operator!=(const T*) const noexcept { return true; }
+    
+    constexpr operator bool() const noexcept { return false; }
+};
+
+export constexpr nil null_nil{};
+
+export template <complete_pointer pointer_type>
+class non_null
+{
+      private:
+	pointer_type ptr;
+
+      public:
+	using element_type = remove_pointer_type<pointer_type>;
+
+	constexpr non_null() = delete;
+	constexpr non_null(const non_null&) = default;
+	constexpr non_null(non_null&&) = default;
+
+	template <typename source_pointer_type>
+		requires complete_pointer<source_pointer_type> && is_convertible<source_pointer_type, pointer_type>
+	constexpr explicit non_null(source_pointer_type p) noexcept : ptr(p)
+	{
+		if (unlikely(p == nullptr))
+		{
+			__builtin_trap();
+		}
+	}
+
+	template <typename reference_type>
+		requires reference_to_pointer<reference_type> && is_convertible<add_pointer_type<remove_reference_type<reference_type>>, pointer_type>
+	constexpr non_null(reference_type&& ref) noexcept : ptr(&ref)
+	{
+	}
+
+	constexpr non_null& operator=(const non_null&) = default;
+	constexpr non_null& operator=(non_null&&) = default;
+
+	template <typename source_pointer_type>
+		requires complete_pointer<source_pointer_type> && is_convertible<source_pointer_type, pointer_type>
+	constexpr non_null& operator=(source_pointer_type p) noexcept
+	{
+		if (unlikely(p == nullptr))
+		{
+			__builtin_trap();
+		}
+		ptr = p;
+		return *this;
+	}
+
+	constexpr pointer_type get() const noexcept { return ptr; }
+
+	constexpr element_type& operator*() const noexcept { return *ptr; }
+
+	constexpr pointer_type operator->() const noexcept { return ptr; }
+
+	constexpr operator pointer_type() const noexcept { return ptr; }
+
+	constexpr element_type& operator[](u64 index) const noexcept
+		requires array_subscriptable<pointer_type>
+	{
+		return ptr[index];
+	}
+
+	template <typename offset_type>
+		requires is_integral<offset_type>
+	constexpr pointer_type operator+(offset_type offset) const noexcept
+	{
+		return ptr + offset;
+	}
+
+	template <typename offset_type>
+		requires is_integral<offset_type>
+	constexpr pointer_type operator-(offset_type offset) const noexcept
+	{
+		return ptr - offset;
+	}
+
+	constexpr non_null& operator++() noexcept
+	{
+		++ptr;
+		return *this;
+	}
+
+	constexpr non_null operator++(int) noexcept
+	{
+		auto temp = *this;
+		++ptr;
+		return temp;
+	}
+
+	constexpr non_null& operator--() noexcept
+	{
+		--ptr;
+		return *this;
+	}
+
+	constexpr non_null operator--(int) noexcept
+	{
+		auto temp = *this;
+		--ptr;
+		return temp;
+	}
+
+	template <typename other_pointer_type>
+		requires equality_comparable<other_pointer_type, pointer_type>
+	constexpr bool operator==(other_pointer_type other) const noexcept
+	{
+		return ptr == other;
+	}
+
+	template <typename other_pointer_type>
+		requires equality_comparable<other_pointer_type, pointer_type>
+	constexpr bool operator!=(other_pointer_type other) const noexcept
+	{
+		return ptr != other;
+	}
+
+	constexpr bool operator==(const non_null& other) const noexcept
+	{
+		return ptr == other.ptr;
+	}
+
+	constexpr bool operator!=(const non_null& other) const noexcept
+	{
+		return ptr != other.ptr;
+	}
+
+	template <typename other_pointer_type>
+		requires three_way_comparable<other_pointer_type, pointer_type>
+	constexpr auto operator<=>(other_pointer_type other) const noexcept
+	{
+		return ptr <=> other;
+	}
+
+	constexpr auto operator<=>(const non_null& other) const noexcept
+	{
+		return ptr <=> other.ptr;
+	}
+};
+
+template <typename source_pointer_type>
+	requires complete_pointer<source_pointer_type>
+non_null(source_pointer_type) -> non_null<source_pointer_type>;
+
+template <typename reference_type>
+	requires reference_to_pointer<reference_type>
+non_null(reference_type&&) -> non_null<add_pointer_type<remove_reference_type<reference_type>>>;
+
+export template <typename source_pointer_type>
+	requires complete_pointer<source_pointer_type>
+constexpr auto make_non_null(source_pointer_type ptr) noexcept -> non_null<source_pointer_type>
+{
+	return non_null<source_pointer_type>{ptr};
+}
+
+export template <typename reference_type>
+	requires reference_to_pointer<reference_type>
+constexpr auto make_non_null(reference_type&& ref) noexcept -> non_null<add_pointer_type<remove_reference_type<reference_type>>>
+{
+	return non_null<add_pointer_type<remove_reference_type<reference_type>>>{ref};
+}
+
+export template <typename source_pointer_type>
+	requires complete_pointer<source_pointer_type>
+constexpr auto assume_non_null(source_pointer_type ptr) noexcept -> non_null<source_pointer_type>
+{
+	return non_null<source_pointer_type>{ptr};
+}
+
+export template <typename target_pointer_type, typename source_pointer_type>
+	requires(is_pointer<target_pointer_type> && complete_pointer<target_pointer_type> &&
+		 is_convertible<remove_pointer_type<source_pointer_type>, remove_pointer_type<target_pointer_type>>)
+constexpr non_null<target_pointer_type> cast_non_null(non_null<source_pointer_type> from) noexcept
+{
+	return assume_non_null(static_cast<target_pointer_type>(from.get()));
+}

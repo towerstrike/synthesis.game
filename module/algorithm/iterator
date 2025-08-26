@@ -1,0 +1,3 @@
+export module algorithm.iterator;
+
+// iterator traits, advance, distance, reverse_iterator for traversal

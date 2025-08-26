@@ -1,3 +1,70 @@
-export module optional;
+export module core.optional;
+import core.variant;
+import core.null;
 
-// nullable value wrapper without heap allocation
+export template<typename T>
+using optional = variant<T, nil>;
+
+export template<typename T>
+optional<T> some(T value) {
+    return optional<T>{value};
+}
+
+export template<typename T>
+constexpr optional<T> none() {
+    return optional<T>{null_nil};
+}
+
+export template<typename T>
+bool has_value(const optional<T>& opt) {
+    return opt.template holds<T>();
+}
+
+export template<typename T>
+bool is_none(const optional<T>& opt) {
+    return opt.template holds<nil>();
+}
+
+export template<typename T>
+T& value(optional<T>& opt) {
+    return opt.template get<T>();
+}
+
+export template<typename T>
+const T& value(const optional<T>& opt) {
+    return opt.template get<T>();
+}
+
+export template<typename T>
+T* value_ptr(optional<T>& opt) {
+    return opt.template get_if<T>();
+}
+
+export template<typename T>
+const T* value_ptr(const optional<T>& opt) {
+    return opt.template get_if<T>();
+}
+
+export template<typename T>
+T value_or(const optional<T>& opt, T default_value) {
+    if (has_value(opt)) {
+        return value(opt);
+    }
+    return default_value;
+}
+
+export template<typename T, typename func_type>
+auto map(const optional<T>& opt, func_type func) -> optional<decltype(func(value(opt)))> {
+    if (has_value(opt)) {
+        return some(func(value(opt)));
+    }
+    return none<decltype(func(value(opt)))>();
+}
+
+export template<typename T, typename func_type>
+auto and_then(const optional<T>& opt, func_type func) -> decltype(func(value(opt))) {
+    if (has_value(opt)) {
+        return func(value(opt));
+    }
+    return none<typename decltype(func(value(opt)))::value_type>();
+}

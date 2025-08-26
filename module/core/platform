@@ -1,4 +1,4 @@
-export module platform;
+export module core.platform;
 
 enum class Arch
 {
@@ -68,5 +68,24 @@ struct Platform
 #endif
 
 export constexpr Platform PLATFORM{__arch__, __os__, __endian__, __is_64bit__};
+
+// TODO: Add profiling support to track branch prediction accuracy
+// TODO: Support MSVC [[likely]]/[[unlikely]] attributes for cross-compiler compatibility
+// TODO: Support probability values for fine-grained likelihood hints
+export template <typename value_type>
+constexpr value_type expect(value_type value, value_type expected) noexcept
+{
+	return static_cast<value_type>(__builtin_expect(static_cast<unsigned long long>(value), static_cast<unsigned long long>(expected)));
+}
+
+export constexpr bool likely(bool condition) noexcept
+{
+	return expect(condition, true);
+}
+
+export constexpr bool unlikely(bool condition) noexcept
+{
+	return expect(condition, false);
+}
 
 // Keep macros defined for other modules to use

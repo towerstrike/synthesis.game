@@ -1,3 +1,82 @@
-export module error;
+export module core.error;
+import core.type;
+import core.trait;
 
-// error types and error handling utilities
+export struct anyhow; // forward declaration
+
+export template<typename T>
+concept error = requires(const T& err) {
+    requires !is_same<T, anyhow>;
+};
+
+export template<typename T>
+concept has_message = requires(const T& err) {
+    { err.message() } -> is_convertible<const char*>;
+};
+
+export template<typename T>
+concept has_code = requires(const T& err) {
+    { err.code() } -> is_integral;
+};
+
+export template<typename T>
+concept integral_error = is_integral<T>;
+
+export struct anyhow {
+private:
+    const char* type_name;
+    const char* message;
+    u64 error_code;
+    
+public:
+    template<error error_type>
+    constexpr anyhow(const error_type& err) noexcept 
+        : type_name(__builtin_type_name<error_type>())
+        , message(nullptr)
+        , error_code(0)
+    {
+        if constexpr (has_message<error_type>) {
+            message = err.message();
+        }
+        if constexpr (has_code<error_type>) {
+            error_code = static_cast<u64>(err.code());
+        } else if constexpr (integral_error<error_type>) {
+            error_code = static_cast<u64>(err);
+        }
+    }
+    
+    template<error error_type>
+    constexpr anyhow(const error_type& err, const char* msg) noexcept
+        : type_name(__builtin_type_name<error_type>())
+        , message(msg)
+        , error_code(0)
+    {
+        if constexpr (has_code<error_type>) {
+            error_code = static_cast<u64>(err.code());
+        } else if constexpr (integral_error<error_type>) {
+            error_code = static_cast<u64>(err);
+        }
+    }
+    
+    constexpr const char* what() const noexcept { 
+        return message ? message : "unknown error";
+    }
+    
+    constexpr const char* type() const noexcept { 
+        return type_name; 
+    }
+    
+    constexpr u64 code() const noexcept { 
+        return error_code; 
+    }
+    
+    template<error error_type>
+    constexpr bool is() const noexcept {
+        return type_name == __builtin_type_name<error_type>();
+    }
+    
+    template<integral_error error_type>
+    constexpr error_type as() const noexcept {
+        return static_cast<error_type>(error_code);
+    }
+};

@@ -1,0 +1,36 @@
+module alloc;
+import type;
+import platform;
+import result;
+import null;
+import posix;
+
+result<non_null<unit*>, alloc_error> system_allocator::allocate(u64 size) {
+    if (unlikely(size == 0)) {
+        return alloc_error::invalid_size;
+    }
+    
+    unit* ptr;
+    if (unlikely(posix::memory_alloc_aligned(&ptr, 16, size) != 0)) {
+        return alloc_error::out_of_memory;
+    }
+    
+    return non_null<unit*>{ptr};
+}
+
+unit system_allocator::deallocate(unit* ptr, u64 size) {
+    posix::memory_free(ptr);
+}
+
+result<non_null<unit*>, alloc_error> system_allocator::reallocate(unit* ptr, u64 old_size, u64 new_size) {
+    if (unlikely(new_size == 0)) {
+        return alloc_error::invalid_size;
+    }
+    
+    unit* new_ptr = posix::memory_realloc(ptr, new_size);
+    if (unlikely(new_ptr == null)) {
+        return alloc_error::out_of_memory;
+    }
+    
+    return non_null<unit*>{new_ptr};
+}

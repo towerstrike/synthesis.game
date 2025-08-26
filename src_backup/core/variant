@@ -1,0 +1,157 @@
+module variant;
+import type;
+import trait;
+import platform;
+
+template<typename... types>
+template<typename target_type>
+constexpr u64 variant<types...>::index_of() noexcept {
+    u64 index = 0;
+    ((is_same<target_type, types> ? true : (++index, false)) || ...);
+    return index;
+}
+
+template<typename... types>
+template<typename target_type>
+    requires is_one_of<target_type, types...>
+variant<types...>::variant(target_type value) noexcept
+    : type_index(index_of<target_type>()) {
+    construct(static_cast<target_type&&>(value));
+}
+
+template<typename... types>
+variant<types...>::variant(const variant& other)
+    : type_index(other.type_index) {
+    copy_from(other);
+}
+
+template<typename... types>
+variant<types...>& variant<types...>::operator=(const variant& other) {
+    if (this != &other) {
+        destroy();
+        type_index = other.type_index;
+        copy_from(other);
+    }
+    return *this;
+}
+
+template<typename... types>
+variant<types...>::variant(variant&& other) noexcept
+    : type_index(other.type_index) {
+    move_from(static_cast<variant&&>(other));
+}
+
+template<typename... types>
+variant<types...>& variant<types...>::operator=(variant&& other) noexcept {
+    if (this != &other) {
+        destroy();
+        type_index = other.type_index;
+        move_from(static_cast<variant&&>(other));
+    }
+    return *this;
+}
+
+template<typename... types>
+variant<types...>::~variant() {
+    destroy();
+}
+
+template<typename... types>
+template<typename target_type>
+    requires is_one_of<target_type, types...>
+bool variant<types...>::holds() const noexcept {
+    return type_index == index_of<target_type>();
+}
+
+template<typename... types>
+template<typename target_type>
+    requires is_one_of<target_type, types...>
+target_type& variant<types...>::get() {
+    if (unlikely(!holds<target_type>())) {
+        __builtin_trap();
+    }
+    return *reinterpret_cast<target_type*>(storage);
+}
+
+template<typename... types>
+template<typename target_type>
+    requires is_one_of<target_type, types...>
+const target_type& variant<types...>::get() const {
+    if (unlikely(!holds<target_type>())) {
+        __builtin_trap();
+    }
+    return *reinterpret_cast<const target_type*>(storage);
+}
+
+template<typename... types>
+template<typename target_type>
+    requires is_one_of<target_type, types...>
+target_type* variant<types...>::get_if() noexcept {
+    if (holds<target_type>()) {
+        return reinterpret_cast<target_type*>(storage);
+    }
+    return null;
+}
+
+template<typename... types>
+template<typename target_type>
+    requires is_one_of<target_type, types...>
+const target_type* variant<types...>::get_if() const noexcept {
+    if (holds<target_type>()) {
+        return reinterpret_cast<const target_type*>(storage);
+    }
+    return null;
+}
+
+template<typename... types>
+u64 variant<types...>::index() const noexcept {
+    return type_index;
+}
+
+template<typename... types>
+template<typename target_type>
+void variant<types...>::construct(target_type&& value) noexcept {
+    new(storage) remove_reference_type<target_type>(static_cast<target_type&&>(value));
+}
+
+template<typename... types>
+void variant<types...>::destroy() noexcept {
+    u64 current_index = 0;
+    (((current_index++ == type_index) ? (reinterpret_cast<types*>(storage)->~types(), true) : false) || ...);
+}
+
+template<typename... types>
+void variant<types...>::copy_from(const variant& other) {
+    u64 current_index = 0;
+    (((current_index++ == type_index) ? (new(storage) types(*reinterpret_cast<const types*>(other.storage)), true) : false) || ...);
+}
+
+template<typename... types>
+void variant<types...>::move_from(variant&& other) noexcept {
+    u64 current_index = 0;
+    (((current_index++ == type_index) ? (new(storage) types(static_cast<types&&>(*reinterpret_cast<types*>(other.storage))), true) : false) || ...);
+}
+
+template<typename target_type, typename... types>
+    requires is_one_of<target_type, types...>
+target_type& get(variant<types...>& v) {
+    return v.template get<target_type>();
+}
+
+template<typename target_type, typename... types>
+    requires is_one_of<target_type, types...>
+const target_type& get(const variant<types...>& v) {
+    return v.template get<target_type>();
+}
+
+template<typename target_type, typename... types>
+    requires is_one_of<target_type, types...>
+target_type* get_if(variant<types...>* v) noexcept {
+    return v ? v->template get_if<target_type>() : null;
+}
+
+template<typename target_type, typename... types>
+    requires is_one_of<target_type, types...>
+const target_type* get_if(const variant<types...>* v) noexcept {
+    return v ? v->template get_if<target_type>() : null;
+}

@@ -1,0 +1,37 @@
+module io.print;
+import darwin;
+import core.type;
+
+stdout& stdout::operator<<(const char* str)
+{
+	darwin::file_write(1, str, darwin::string_length(str));
+	return *this;
+}
+
+stdout& stdout::operator<<(char c)
+{
+	darwin::file_write(1, &c, 1);
+	return *this;
+}
+
+unit stdout::flush()
+{
+	darwin::file_flush(nullptr);
+}
+
+stderr& stderr::operator<<(const char* str)
+{
+	darwin::file_write(2, str, darwin::string_length(str));
+	return *this;
+}
+
+stderr& stderr::operator<<(char c)
+{
+	darwin::file_write(2, &c, 1);
+	return *this;
+}
+
+unit stderr::flush()
+{
+	darwin::file_flush(nullptr);
+}

@@ -1,0 +1,137 @@
+export module core.variant;
+import core.type;
+import core.trait;
+
+export template<u64... indices>
+struct index_sequence {};
+
+export template<u64 n, u64... indices>
+struct make_index_sequence_impl {
+    using type = conditional_type<
+        n == 0,
+        index_sequence<indices...>,
+        typename make_index_sequence_impl<n-1, indices..., n-1>::type
+    >;
+};
+
+export template<u64 n>
+using make_index_sequence = typename make_index_sequence_impl<n>::type;
+
+export template<typename element_type, u64 size>
+struct array {
+    element_type data[size];
+    
+    constexpr element_type& operator[](u64 index) noexcept {
+        return data[index];
+    }
+    
+    constexpr const element_type& operator[](u64 index) const noexcept {
+        return data[index];
+    }
+};
+
+export template<typename visitor_type, typename... types>
+using common_return_type = conditional_type<
+    (is_same<decltype(declare_value<visitor_type>()(declare_value<types>())), 
+             decltype(declare_value<visitor_type>()(declare_value<types>()))> && ...),
+    decltype(declare_value<visitor_type>()(declare_value<nth_type<0, types...>>())),
+    unit
+>;
+
+export template<typename... types>
+class variant {
+private:
+    static constexpr u64 storage_size = max_sizeof<types...>();
+    static constexpr u64 storage_align = max_alignof<types...>();
+    
+    alignas(storage_align) u8 storage[storage_size];
+    u64 type_index;
+    
+    template<typename target_type>
+    static constexpr u64 index_of() noexcept;
+    
+    template<u64 index>
+    using type_at = nth_type<index, types...>;
+    
+public:
+    variant() = delete;
+    
+    template<typename target_type>
+        requires is_one_of<target_type, types...>
+    variant(target_type value) noexcept;
+    
+    variant(const variant& other);
+    variant& operator=(const variant& other);
+    
+    variant(variant&& other) noexcept;
+    variant& operator=(variant&& other) noexcept;
+    
+    ~variant();
+    
+    template<typename target_type>
+        requires is_one_of<target_type, types...>
+    bool holds() const noexcept;
+    
+    template<typename target_type>
+        requires is_one_of<target_type, types...>
+    target_type& get();
+    
+    template<typename target_type>
+        requires is_one_of<target_type, types...>
+    const target_type& get() const;
+    
+    template<typename target_type>
+        requires is_one_of<target_type, types...>
+    target_type* get_if() noexcept;
+    
+    template<typename target_type>
+        requires is_one_of<target_type, types...>
+    const target_type* get_if() const noexcept;
+    
+    template<typename visitor_type>
+    auto visit(visitor_type visitor) const;
+    
+    template<typename visitor_type>
+    auto visit(visitor_type visitor);
+    
+    u64 index() const noexcept;
+    
+private:
+    template<typename target_type>
+    void construct(target_type&& value) noexcept;
+    
+    void destroy() noexcept;
+    void copy_from(const variant& other);
+    void move_from(variant&& other) noexcept;
+    
+    template<typename visitor_type, u64... indices>
+    auto visit_impl(visitor_type visitor, index_sequence<indices...>) const;
+    
+    template<typename visitor_type, u64... indices>
+    auto visit_impl(visitor_type visitor, index_sequence<indices...>);
+    
+    template<typename visitor_type, typename return_type, u64... indices>
+    static constexpr auto make_vtable() noexcept;
+};
+
+export template<typename target_type, typename... types>
+    requires is_one_of<target_type, types...>
+target_type& get(variant<types...>& v);
+
+export template<typename target_type, typename... types>
+    requires is_one_of<target_type, types...>
+const target_type& get(const variant<types...>& v);
+
+export template<typename target_type, typename... types>
+    requires is_one_of<target_type, types...>
+target_type* get_if(variant<types...>* v) noexcept;
+
+export template<typename target_type, typename... types>
+    requires is_one_of<target_type, types...>
+const target_type* get_if(const variant<types...>* v) noexcept;
+
+export template<typename visitor_type, typename... types>
+auto visit(visitor_type visitor, const variant<types...>& v);
+
+export template<typename visitor_type, typename... types>
+auto visit(visitor_type visitor, variant<types...>& v);

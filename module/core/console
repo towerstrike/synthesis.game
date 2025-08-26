@@ -1,3 +1,0 @@
-export module console;
-
-// console output for debugging and logging

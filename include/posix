@@ -1,0 +1,81 @@
+// Core POSIX headers
+#include <dirent.h>
+#include <dlfcn.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+export module posix;
+
+export {
+	// unistd.h
+	using file_close = ::close;
+	using file_flush = ::fflush;
+	using file_sync = ::fsync;
+	using file_seek = ::lseek;
+	using nano_sleep = ::nanosleep;
+	using file_open = ::open;
+	using file_read = ::read;
+	using thread_sleep = ::sleep;
+	using micro_sleep = ::usleep;
+	using file_write = ::write;
+
+	// string.h
+	using memory_copy = ::memcpy;
+	using memory_set = ::memset;
+	using string_compare = ::strcmp;
+	using string_copy = ::strcpy;
+	using string_length = ::strlen;
+
+	// stdlib.h
+	using memory_alloc = ::malloc;
+	using memory_free = ::free;
+	using memory_realloc = ::realloc;
+	using memory_alloc_aligned = ::posix_memalign;
+
+	// fcntl.h
+	using file_control = ::fcntl;
+
+	// sys/stat.h
+	using file_change_mode = ::chmod;
+	using directory_make = ::mkdir;
+	using file_stat = ::stat;
+
+	// errno.h
+	using error_number = ::errno;
+
+	// pthread.h
+	using thread_handle = ::pthread_t;
+	using thread_create = ::pthread_create;
+	using thread_join = ::pthread_join;
+	using mutex_handle = ::pthread_mutex_t;
+	using mutex_init = ::pthread_mutex_init;
+	using mutex_lock = ::pthread_mutex_lock;
+	using mutex_unlock = ::pthread_mutex_unlock;
+
+	// sys/time.h
+	using time_get_of_day = ::gettimeofday;
+	using time_value = ::timeval;
+
+	// sys/mman.h
+	using memory_map = ::mmap;
+	using memory_protect = ::mprotect;
+	using memory_unmap = ::munmap;
+
+	// dirent.h
+	using directory_close = ::closedir;
+	using directory_handle = ::DIR;
+	using directory_open = ::opendir;
+	using directory_read = ::readdir;
+
+	// dlfcn.h
+	using dynamic_lib_close = ::dlclose;
+	using dynamic_lib_open = ::dlopen;
+	using dynamic_lib_symbol = ::dlsym;
+}

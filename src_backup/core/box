@@ -1,0 +1,93 @@
+module box;
+import type;
+import alloc;
+import platform;
+
+template <typename element_type, allocator allocator_type>
+box<element_type, allocator_type>::box(element_type value, allocator_type alloc)
+    : alloc(alloc)
+{
+	auto allocation_result = this->alloc.allocate(sizeof(element_type));
+	ptr = static_cast<element_type*>(allocation_result.expect("box allocation failed"));
+	new (ptr) element_type(static_cast<element_type&&>(value));
+}
+
+template <typename element_type, allocator allocator_type>
+box<element_type, allocator_type>::box(box&& other) noexcept
+    : ptr(other.ptr), alloc(static_cast<allocator_type&&>(other.alloc))
+{
+	other.ptr = null;
+}
+
+template <typename element_type, allocator allocator_type>
+box<element_type, allocator_type>& box<element_type, allocator_type>::operator=(box&& other) noexcept
+{
+	if (this != &other)
+	{
+		if (ptr != null)
+		{
+			ptr->~element_type();
+			alloc.deallocate(ptr, sizeof(element_type));
+		}
+		ptr = other.ptr;
+		alloc = static_cast<allocator_type&&>(other.alloc);
+		other.ptr = null;
+	}
+	return *this;
+}
+
+template <typename element_type, allocator allocator_type>
+box<element_type, allocator_type>::~box()
+{
+	if (ptr != null)
+	{
+		ptr->~element_type();
+		alloc.deallocate(ptr, sizeof(element_type));
+	}
+}
+
+template <typename element_type, allocator allocator_type>
+box<element_type, allocator_type> box<element_type, allocator_type>::clone() const
+{
+	return box<element_type, allocator_type>(*ptr, alloc);
+}
+
+template <typename element_type, allocator allocator_type>
+element_type& box<element_type, allocator_type>::operator*() const noexcept
+{
+	return *ptr;
+}
+
+template <typename element_type, allocator allocator_type>
+element_type* box<element_type, allocator_type>::operator->() const noexcept
+{
+	return ptr;
+}
+
+template <typename element_type, allocator allocator_type>
+element_type* box<element_type, allocator_type>::get() const noexcept
+{
+	return ptr;
+}
+
+template <typename element_type, allocator allocator_type>
+const element_type& box<element_type, allocator_type>::as_ref() const noexcept
+{
+	return *ptr;
+}
+
+template <typename element_type, allocator allocator_type>
+element_type& box<element_type, allocator_type>::as_mut() noexcept
+{
+	return *ptr;
+}
+
+template <typename element_type, allocator allocator_type>
+element_type box<element_type, allocator_type>::release() noexcept
+{
+	element_type value = static_cast<element_type&&>(*ptr);
+	ptr->~element_type();
+	alloc.deallocate(ptr, sizeof(element_type));
+	ptr = null;
+	return value;
+}

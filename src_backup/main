@@ -1,0 +1,11 @@
+// main - Basic freestanding C++20 entry point
+
+// Freestanding headers are allowed
+
+// Assuming 'type' is a module, use proper import if available, otherwise include headers
+import type;
+
+// Custom entry point (instead of main)
+extern "C" unit _start()
+{
+}

@@ -1,0 +1,142 @@
+module metal;
+
+#include <CoreVideo/CoreVideo.h>
+#include <Metal/Metal.h>
+#include <MetalKit/MetalKit.h>
+#include <QuartzCore/CAMetalLayer.h>
+#include <QuartzCore/QuartzCore.h>
+#include <simd/simd.h>
+
+export module metal;
+
+export namespace metal {
+// Metal/Metal.h - Core Metal
+using device = id<MTLDevice>;
+using command_queue = id<MTLCommandQueue>;
+using command_buffer = id<MTLCommandBuffer>;
+using render_command_encoder = id<MTLRenderCommandEncoder>;
+using compute_command_encoder = id<MTLComputeCommandEncoder>;
+using blit_command_encoder = id<MTLBlitCommandEncoder>;
+using buffer = id<MTLBuffer>;
+using texture = id<MTLTexture>;
+using sampler_state = id<MTLSamplerState>;
+using render_pipeline_state = id<MTLRenderPipelineState>;
+using compute_pipeline_state = id<MTLComputePipelineState>;
+using library = id<MTLLibrary>;
+using function = id<MTLFunction>;
+using vertex_descriptor = MTLVertexDescriptor;
+using render_pipeline_descriptor = MTLRenderPipelineDescriptor;
+using compute_pipeline_descriptor = MTLComputePipelineDescriptor;
+using render_pass_descriptor = MTLRenderPassDescriptor;
+using depth_stencil_state = id<MTLDepthStencilState>;
+using depth_stencil_descriptor = MTLDepthStencilDescriptor;
+using texture_descriptor = MTLTextureDescriptor;
+using sampler_descriptor = MTLSamplerDescriptor;
+using heap = id<MTLHeap>;
+using heap_descriptor = MTLHeapDescriptor;
+using fence = id<MTLFence>;
+using argument_encoder = id<MTLArgumentEncoder>;
+using indirect_command_buffer = id<MTLIndirectCommandBuffer>;
+
+// Metal enums
+using pixel_format = MTLPixelFormat;
+using vertex_format = MTLVertexFormat;
+using primitive_type = MTLPrimitiveType;
+using index_type = MTLIndexType;
+using load_action = MTLLoadAction;
+using store_action = MTLStoreAction;
+using texture_type = MTLTextureType;
+using texture_usage = MTLTextureUsage;
+using storage_mode = MTLStorageMode;
+using cpu_cache_mode = MTLCPUCacheMode;
+using resource_options = MTLResourceOptions;
+using compare_function = MTLCompareFunction;
+using stencil_operation = MTLStencilOperation;
+using cull_mode = MTLCullMode;
+using winding = MTLWinding;
+using fill_mode = MTLFillMode;
+using triangle_fill_mode = MTLTriangleFillMode;
+using blend_factor = MTLBlendFactor;
+using blend_operation = MTLBlendOperation;
+using color_write_mask = MTLColorWriteMask;
+using multisample_depth_resolve_filter = MTLMultisampleDepthResolveFilter;
+using sample_position = MTLSamplePosition;
+
+// Metal constants
+using pixel_format_invalid = MTLPixelFormatInvalid;
+using pixel_format_rgba8_unorm = MTLPixelFormatRGBA8Unorm;
+using pixel_format_bgra8_unorm = MTLPixelFormatBGRA8Unorm;
+using pixel_format_depth32_float = MTLPixelFormatDepth32Float;
+using primitive_type_triangle = MTLPrimitiveTypeTriangle;
+using primitive_type_triangle_strip = MTLPrimitiveTypeTriangleStrip;
+using index_type_uint16 = MTLIndexTypeUInt16;
+using index_type_uint32 = MTLIndexTypeUInt32;
+using load_action_dont_care = MTLLoadActionDontCare;
+using load_action_load = MTLLoadActionLoad;
+using load_action_clear = MTLLoadActionClear;
+using store_action_dont_care = MTLStoreActionDontCare;
+using store_action_store = MTLStoreActionStore;
+
+// Metal functions
+using create_system_default_device = MTLCreateSystemDefaultDevice;
+using copy_all_devices = MTLCopyAllDevices;
+
+// MetalKit/MetalKit.h - MetalKit
+using view = MTKView;
+using view_delegate = MTKViewDelegate;
+using mesh_buffer_allocator = MTKMeshBufferAllocator;
+using mesh = MTKMesh;
+using submesh = MTKSubmesh;
+using mesh_buffer = MTKMeshBuffer;
+using texture_loader = MTKTextureLoader;
+
+// MetalKit enums
+using view_draw_delegate = MTKViewDelegate;
+
+// QuartzCore/CAMetalLayer.h - Metal Layer
+using metal_layer = CAMetalLayer;
+using metal_drawable = id<CAMetalDrawable>;
+using layer = CALayer;
+
+// Metal layer properties
+using device_property = @"device";
+using pixel_format_property = @"pixelFormat";
+using framebuffer_only_property = @"framebufferOnly";
+using drawable_size_property = @"drawableSize";
+using contents_scale_property = @"contentsScale";
+
+// CoreVideo/CoreVideo.h - Display Link
+using display_link_ref = CVDisplayLinkRef;
+using display_link_create_with_active_displays =
+    ::CVDisplayLinkCreateWithActiveCGDisplays;
+using display_link_set_output_callback = ::CVDisplayLinkSetOutputCallback;
+using display_link_start = ::CVDisplayLinkStart;
+using display_link_stop = ::CVDisplayLinkStop;
+using display_link_release = ::CVDisplayLinkRelease;
+using time_stamp = CVTimeStamp;
+using option_flags = CVOptionFlags;
+using return_code = CVReturn;
+
+// simd/simd.h - SIMD Math Types
+using float2 = simd_float2;
+using float3 = simd_float3;
+using float4 = simd_float4;
+using float4x4 = simd_float4x4;
+using float3x3 = simd_float3x3;
+using int2 = simd_int2;
+using int3 = simd_int3;
+using int4 = simd_int4;
+using uint2 = simd_uint2;
+using uint3 = simd_uint3;
+using uint4 = simd_uint4;
+
+// SIMD functions
+using make_float2 = simd_make_float2;
+using make_float3 = simd_make_float3;
+using make_float4 = simd_make_float4;
+using matrix_identity_float4x4 = matrix_identity_float4x4;
+using matrix_multiply = simd_mul;
+using vector_normalize = simd_normalize;
+using vector_dot = simd_dot;
+using vector_cross = simd_cross;
+} // namespace metal

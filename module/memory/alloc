@@ -1,0 +1,27 @@
+export module memory.alloc;
+import core.type;
+import core.result;
+import core.null;
+import core.error;
+
+export enum class alloc_error {
+    out_of_memory,
+    invalid_size,
+    alignment_failed
+};
+
+export template<typename allocator_type>
+concept allocator = requires(allocator_type& alloc, u64 size, unit* ptr) {
+    { alloc.allocate(size) } -> result<non_null<unit*>, alloc_error>;
+    { alloc.deallocate(ptr, size) } -> unit;
+    { alloc.reallocate(ptr, size, size) } -> result<non_null<unit*>, alloc_error>;
+};
+
+export struct system_allocator {
+    result<non_null<unit*>, alloc_error> allocate(u64 size);
+    unit deallocate(unit* ptr, u64 size);
+    result<non_null<unit*>, alloc_error> reallocate(unit* ptr, u64 old_size, u64 new_size);
+};
+
+export inline system_allocator global_allocator{};
+

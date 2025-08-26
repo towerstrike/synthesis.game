@@ -1,0 +1,36 @@
+export module type;
+import platform;
+
+export using i8 = signed char;
+export using i16 = signed short;
+export using i32 = signed int;
+export using i64 = signed long long;
+
+export using u8 = unsigned char;
+export using u16 = unsigned short;
+export using u32 = unsigned int;
+export using u64 = unsigned long long;
+
+export using unit = void;
+export using null = nullptr;
+
+export class never
+{
+      private:
+	never() = delete;
+	~never() = delete;
+
+      public:
+	template <typename T>
+	operator T() const noexcept;
+};
+
+static_assert(sizeof(u8) == 1, "u8 must be equal to one byte");
+static_assert(sizeof(u16) == 2, "u16 must be equal to two bytes");
+static_assert(sizeof(u32) == 4, "u32 must be equal to four bytes");
+static_assert(sizeof(u64) == 8, "u64 must be equal to eight bytes");
+
+static_assert(sizeof(i8) == 1, "i8 must be equal to one byte");
+static_assert(sizeof(i16) == 2, "i16 must be equal to two bytes");
+static_assert(sizeof(i32) == 4, "i32 must be equal to four bytes");
+static_assert(sizeof(i64) == 8, "i64 must be equal to eight bytes");

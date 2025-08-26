@@ -1,0 +1,3 @@
+export module math.compare;
+
+// ordering and equality comparison operations

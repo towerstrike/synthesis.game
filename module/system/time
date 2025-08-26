@@ -1,0 +1,3 @@
+export module system.time;
+
+// high-resolution timing, duration, clocks for frame timing

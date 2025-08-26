@@ -1,5 +1,5 @@
-export module type;
-import platform;
+export module core.type;
+import core.platform;
 
 export using i8 = signed char;
 export using i16 = signed short;
@@ -10,14 +10,6 @@ export using u8 = unsigned char;
 export using u16 = unsigned short;
 export using u32 = unsigned int;
 export using u64 = unsigned long long;
-
-#if __is_64bit__
-export using isize = i64;
-export using usize = u64;
-#else
-export using isize = i32;
-export using usize = u32;
-#endif
 
 export using unit = void;
 

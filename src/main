@@ -3,10 +3,9 @@
 // Freestanding headers are allowed
 
 // Assuming 'type' is a module, use proper import if available, otherwise include headers
-import type;
+import core.type;
 
 // Custom entry point (instead of main)
-extern "C" void _start()
+extern "C" unit _start()
 {
-	
 }

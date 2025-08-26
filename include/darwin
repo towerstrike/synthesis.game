@@ -1,0 +1,253 @@
+// Darwin-specific headers
+#include <mach/mach.h>
+#include <mach/mach_time.h>
+
+// Cocoa / Appkit for windowing and UI
+#include <AppKit/AppKit.h>
+#include <ApplicationServices/ApplicationServices.h>
+#include <Cocoa/Cocoa.h>
+#include <CoreFoundation/CoreFoundation.h>
+#include <CoreGraphics/CoreGraphics.h>
+#include <Foundation/Foundation.h>
+
+// Additional frameworks
+
+#include <AVFoundation/AVFoundation.h>
+#include <AudioToolbox/AudioToolbox.h>
+#include <CoreVideo/CoreVideo.h>
+#include <GameController/GameController.h>
+#include <IOKit/IOKit.h>
+#include <IOKit/hid/IOHIDManager.h>
+
+import posix;
+
+export module darwin;
+
+export {
+	// Re-export all POSIX functions with snake_case names
+	using posix::file_close;
+	using posix::file_flush;
+	using posix::file_sync;
+	using posix::file_seek;
+	using posix::nano_sleep;
+	using posix::file_open;
+	using posix::file_read;
+	using posix::thread_sleep;
+	using posix::micro_sleep;
+	using posix::file_write;
+	using posix::memory_copy;
+	using posix::memory_set;
+	using posix::string_compare;
+	using posix::string_copy;
+	using posix::string_length;
+	using posix::memory_alloc;
+	using posix::memory_free;
+	using posix::memory_realloc;
+	using posix::memory_alloc_aligned;
+	using posix::file_control;
+	using posix::file_change_mode;
+	using posix::directory_make;
+	using posix::file_stat;
+	using posix::error_number;
+	using posix::thread_handle;
+	using posix::thread_create;
+	using posix::thread_join;
+	using posix::mutex_handle;
+	using posix::mutex_init;
+	using posix::mutex_lock;
+	using posix::mutex_unlock;
+	using posix::time_get_of_day;
+	using posix::time_value;
+	using posix::memory_map;
+	using posix::memory_protect;
+	using posix::memory_unmap;
+	using posix::directory_close;
+	using posix::directory_handle;
+	using posix::directory_open;
+	using posix::directory_read;
+	using posix::dynamic_lib_close;
+	using posix::dynamic_lib_open;
+	using posix::dynamic_lib_symbol;
+
+	// Darwin-specific mach functions with snake_case names
+	using mach_port_handle = ::mach_port_t;
+	using mach_task_self = ::mach_task_self;
+	using mach_absolute_time = ::mach_absolute_time;
+	using mach_timebase_info = ::mach_timebase_info;
+	using mach_timebase_info_data = ::mach_timebase_info_data_t;
+
+	// CoreFoundation/CoreFoundation.h
+	using runloop_ref = CFRunLoopRef;
+	using runloop_get_current = ::CFRunLoopGetCurrent;
+	using runloop_get_main = ::CFRunLoopGetMain;
+	using runloop_run_in_mode = ::CFRunLoopRunInMode;
+	using runloop_stop = ::CFRunLoopStop;
+	using runloop_wake_up = ::CFRunLoopWakeUp;
+	using runloop_source_ref = CFRunLoopSourceRef;
+	using runloop_add_source = ::CFRunLoopAddSource;
+	using runloop_remove_source = ::CFRunLoopRemoveSource;
+	using runloop_timer_ref = CFRunLoopTimerRef;
+	using runloop_timer_create = ::CFRunLoopTimerCreate;
+	using runloop_add_timer = ::CFRunLoopAddTimer;
+	using string_ref = CFStringRef;
+	using string_create_with_c_string = ::CFStringCreateWithCString;
+	using cf_release = ::CFRelease;
+	using array_ref = CFArrayRef;
+	using dictionary_ref = CFDictionaryRef;
+
+	// CoreGraphics/CoreGraphics.h
+	using rect = CGRect;
+	using point = CGPoint;
+	using size = CGSize;
+	using rect_make = ::CGRectMake;
+	using point_make = ::CGPointMake;
+	using size_make = ::CGSizeMake;
+	using display_id = CGDisplayID;
+	using main_display_id = ::CGMainDisplayID;
+	using display_bounds = ::CGDisplayBounds;
+	using event_ref = CGEventRef;
+	using event_create = ::CGEventCreate;
+	using event_post = ::CGEventPost;
+	using event_source_create = ::CGEventSourceCreate;
+	using event_set_integer_value_field = ::CGEventSetIntegerValueField;
+
+	// Cocoa/Cocoa.h
+	using application = NSApplication;
+	using window = NSWindow;
+	using view = NSView;
+	using view_controller = NSViewController;
+	using application_delegate = NSApplicationDelegate;
+	using window_delegate = NSWindowDelegate;
+	using application_activation_policy = NSApplicationActivationPolicy;
+	using activation_policy_regular = NSApplicationActivationPolicyRegular;
+	using activation_policy_accessory =
+	    NSApplicationActivationPolicyAccessory;
+	using activation_policy_prohibited =
+	    NSApplicationActivationPolicyProhibited;
+	using menu = NSMenu;
+	using menu_item = NSMenuItem;
+	using menu_bar = NSMenuBar;
+	using string = NSString;
+	using mutable_string = NSMutableString;
+	using array = NSArray;
+	using mutable_array = NSMutableArray;
+	using dictionary = NSDictionary;
+	using mutable_dictionary = NSMutableDictionary;
+	using thread = NSThread;
+	using operation_queue = NSOperationQueue;
+	using operation = NSOperation;
+	using timer = NSTimer;
+	using runloop = NSRunLoop;
+	using runloop_mode = NSRunLoopMode;
+	using default_runloop_mode = NSDefaultRunLoopMode;
+	using runloop_common_modes = NSRunLoopCommonModes;
+	using notification_center = NSNotificationCenter;
+	using notification = NSNotification;
+	using notification_name = NSNotificationName;
+	using error = NSError;
+	using exception = NSException;
+	using color = NSColor;
+	using bezier_path = NSBezierPath;
+	using graphics_context = NSGraphicsContext;
+	using file_manager = NSFileManager;
+	using directory_enumerator = NSDirectoryEnumerator;
+	using url = NSURL;
+	using bundle = NSBundle;
+	using screen = NSScreen;
+	using screen_number = NSScreenNumber;
+
+	// AppKit/AppKit.h
+	using window_style_mask = NSWindowStyleMask;
+	using window_style_titled = NSWindowStyleMaskTitled;
+	using window_style_closable = NSWindowStyleMaskClosable;
+	using window_style_miniaturizable = NSWindowStyleMaskMiniaturizable;
+	using window_style_resizable = NSWindowStyleMaskResizable;
+	using window_style_borderless = NSWindowStyleMaskBorderless;
+	using window_style_full_size_content =
+	    NSWindowStyleMaskFullSizeContentView;
+	using backing_store_type = NSBackingStoreType;
+	using backing_store_buffered = NSBackingStoreBuffered;
+	using ns_rect = NSRect;
+	using ns_point = NSPoint;
+	using ns_size = NSSize;
+	using make_rect = ::NSMakeRect;
+	using make_point = ::NSMakePoint;
+	using make_size = ::NSMakeSize;
+	using event = NSEvent;
+	using event_type = NSEventType;
+	using event_mask = NSEventMask;
+	using event_type_key_down = NSEventTypeKeyDown;
+	using event_type_key_up = NSEventTypeKeyUp;
+	using event_type_mouse_down = NSEventTypeMouseDown;
+	using event_type_mouse_up = NSEventTypeMouseUp;
+	using event_type_mouse_moved = NSEventTypeMouseMoved;
+	using event_type_left_mouse_down = NSEventTypeLeftMouseDown;
+	using event_type_left_mouse_up = NSEventTypeLeftMouseUp;
+	using event_type_right_mouse_down = NSEventTypeRightMouseDown;
+	using event_type_right_mouse_up = NSEventTypeRightMouseUp;
+	using event_type_scroll_wheel = NSEventTypeScrollWheel;
+	using event_type_mouse_entered = NSEventTypeMouseEntered;
+	using event_type_mouse_exited = NSEventTypeMouseExited;
+	using event_type_flags_changed = NSEventTypeFlagsChanged;
+	using event_modifier_flags = NSEventModifierFlags;
+	using event_modifier_shift = NSEventModifierFlagShift;
+	using event_modifier_control = NSEventModifierFlagControl;
+	using event_modifier_option = NSEventModifierFlagOption;
+	using event_modifier_command = NSEventModifierFlagCommand;
+	using responder = NSResponder;
+
+	// Foundation/Foundation.h
+	using app_did_finish_launching =
+	    NSApplicationDidFinishLaunchingNotification;
+	using app_will_terminate = NSApplicationWillTerminateNotification;
+	using window_did_resize = NSWindowDidResizeNotification;
+	using window_will_close = NSWindowWillCloseNotification;
+	using search_path_for_directories =
+	    ::NSSearchPathForDirectoriesInDomains;
+	using document_directory = NSDocumentDirectory;
+	using app_support_directory = NSApplicationSupportDirectory;
+	using user_domain_mask = NSUserDomainMask;
+	using rect_from_cg_rect = ::NSRectFromCGRect;
+	using point_from_cg_point = ::NSPointFromCGPoint;
+	using size_from_cg_size = ::NSSizeFromCGSize;
+	using cg_rect_from_ns_rect = ::CGRectFromNSRect;
+	using cg_point_from_ns_point = ::CGPointFromNSPoint;
+	using cg_size_from_ns_size = ::CGSizeFromNSSize;
+
+	// IOKit/IOKit.h
+	using io_return = IOReturn;
+	using io_service_matching = ::IOServiceMatching;
+
+	// IOKit/hid/IOHIDManager.h
+	using hid_manager_ref = IOHIDManagerRef;
+	using hid_device_ref = IOHIDDeviceRef;
+	using hid_manager_create = ::IOHIDManagerCreate;
+	using hid_manager_set_device_matching = ::IOHIDManagerSetDeviceMatching;
+	using hid_manager_schedule_with_runloop =
+	    ::IOHIDManagerScheduleWithRunLoop;
+	using hid_manager_open = ::IOHIDManagerOpen;
+
+	// AudioToolbox/AudioToolbox.h
+	using audio_component_description = AudioComponentDescription;
+	using audio_unit = AudioUnit;
+	using audio_component_find_next = ::AudioComponentFindNext;
+	using audio_component_instance_new = ::AudioComponentInstanceNew;
+
+	// GameController/GameController.h
+	using controller = GCController;
+	using extended_gamepad = GCExtendedGamepad;
+	using micro_gamepad = GCMicroGamepad;
+
+	// CoreVideo/CoreVideo.h
+	using display_link_ref = CVDisplayLinkRef;
+	using display_link_create_with_active_displays =
+	    ::CVDisplayLinkCreateWithActiveCGDisplays;
+	using display_link_set_output_callback =
+	    ::CVDisplayLinkSetOutputCallback;
+	using display_link_start = ::CVDisplayLinkStart;
+	using display_link_stop = ::CVDisplayLinkStop;
+
+	// AVFoundation/AVFoundation.h
+	using audio_engine = AVAudioEngine;
+	using audio_player_node = AVAudioPlayerNode;
+}

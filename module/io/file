@@ -1,0 +1,3 @@
+export module io.file;
+
+// file operations: open, read, write, close

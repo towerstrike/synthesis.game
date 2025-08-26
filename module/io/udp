@@ -1,0 +1,3 @@
+export module io.udp;
+
+// UDP socket operations for fast packets

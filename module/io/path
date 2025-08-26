@@ -1,0 +1,3 @@
+export module io.path;
+
+// file path manipulation and validation

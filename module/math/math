@@ -1,0 +1,255 @@
+
+export module math.math;
+import core.type;
+import core.trait;
+
+namespace math
+{
+	template <typename number>
+	concept add = requires(number a, number b) {
+		a + b;
+		a - b;
+		-a;
+		a += b;
+		a -= b;
+	};
+
+	template <typename number>
+	concept multiply = requires(number a, number b) {
+		a * b;
+		a / b;
+		a % b;
+		a *= b;
+		a /= b;
+		a %= b;
+	};
+
+	template <typename number>
+	concept fractional = requires(number n) {
+		n / number{2};
+		n * number{0.5};
+	};
+
+	template <typename number>
+	concept scalar = add<number> && multiply<number> && equality_comparable<number> &&
+			 ordered_comparable<number>;
+
+	template <typename number>
+	concept real = fractional<number> && scalar<number>;
+
+	template <typename number>
+	concept integer = !fractional<number> && scalar<number>;
+
+	template <typename underlying_type, int fractional_bits>
+	struct fixed
+	{
+		underlying_type value;
+		static constexpr int scale = fractional_bits;
+		static constexpr underlying_type one = underlying_type(1) << fractional_bits;
+
+		constexpr fixed() : value(0) {}
+
+		constexpr fixed(underlying_type v) : value(v << fractional_bits) {}
+
+		template <integer int_type>
+		constexpr fixed(int_type v) : value(underlying_type(v) << fractional_bits) {}
+
+		template <fractional float_type>
+		constexpr fixed(float_type f) : value(underlying_type(f * one)) {}
+
+		template <fractional float_type>
+		constexpr float_type to_float() const { return float_type(value) / one; }
+
+		template <integer int_type>
+		constexpr int_type to_int() const { return int_type(value >> fractional_bits); }
+
+		template <integer int_type>
+		constexpr underlying_type to_raw() const { return value; }
+
+		constexpr fixed operator+(const fixed& other) const
+		{
+			fixed result;
+			result.value = value + other.value;
+			return result;
+		}
+
+		constexpr fixed operator-(const fixed& other) const
+		{
+			fixed result;
+			result.value = value - other.value;
+			return result;
+		}
+
+		constexpr fixed operator-() const
+		{
+			fixed result;
+			result.value = -value;
+			return result;
+		}
+	};
+
+	constexpr u64 max_simd_width =
+#ifdef __AVX512F__
+	    16
+#elif defined(__AVX2__)
+	    8
+#elif defined(__NEON__)
+	    4
+#elif defined(__SSE__)
+	    4
+#else
+	    1
+#endif
+	    ;
+
+	template <u64 count>
+	concept simd = count == 1 || count <= max_simd_width && count % 4 == 0;
+
+	// Intrinsic SIMD operations
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit add(number* lhs, number* rhs, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit subtract(number* lhs, number* rhs, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit multiply(number* lhs, number* rhs, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit divide(number* lhs, number* rhs, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit multiply_add(number* lhs, number* rhs, number* accum, number* result);
+
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit absolute(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit minimum(number* lhs, number* rhs, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit maximum(number* lhs, number* rhs, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit square_root(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit reciprocal(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit reverse_square_root(number* scalar, number* result);
+
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit equal(number* lhs, number* rhs, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit not_equal(number* lhs, number* rhs, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit less(number* lhs, number* rhs, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit greater(number* lhs, number* rhs, number* result);
+
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit floor(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit ceiling(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit round(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit truncate(number* scalar, number* result);
+
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit dot_product(number* lhs, number* rhs, number* result);
+
+	// Extrinsic operations (built from intrinsics)
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit modulo(number* lhs, number* rhs, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit clamp(number* scalar, number* min, number* max, number* result);
+
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit sine(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit cosine(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit tangent(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit arc_sine(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit arc_cosine(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit arc_tangent(number* scalar, number* result);
+
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit exponential(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit power(number* base, number* exponent, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit log_base_natural(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit log_base_ten(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit log_base_two(number* scalar, number* result);
+
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit cross_product(number* lhs, number* rhs, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit normalize(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit length(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit reflect(number* incident, number* normal, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit refract(number* incident, number* normal, number* eta, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit distance(number* lhs, number* rhs, number* result);
+
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit lerp(number* start, number* end, number* t, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit step(number* edge, number* x, number* result);
+
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit fraction(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit sign(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit is_nan(number* scalar, number* result);
+	export template <scalar number, u64 count>
+		requires simd<count>
+	unit is_inf(number* scalar, number* result);
+} // namespace math

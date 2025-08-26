@@ -45,7 +45,6 @@ IndentWidth: 8
 IndentWrappedFunctionNames: false
 KeepEmptyLinesAtTheStartOfBlocks: true
 SeparateDefinitionBlocks: Always
-Language: Cpp
 MaxEmptyLinesToKeep: 3
 NamespaceIndentation: All
 PointerAlignment: Left
@@ -71,3 +70,13 @@ SpacesInSquareBrackets: false
 Standard: c++20
 TabWidth: 8
 UseTab: Always
+
+---
+Language: ObjC
+BasedOnStyle: LLVM
+AccessModifierOffset: -2
+IndentWidth: 8
+TabWidth: 8
+UseTab: Always
+Standard: c++20
+PointerAlignment: Left

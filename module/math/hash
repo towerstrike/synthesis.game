@@ -1,0 +1,3 @@
+export module math.hash;
+
+// hash functions for map and set collections

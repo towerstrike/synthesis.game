@@ -1,0 +1,15 @@
+export module print;
+
+export struct stdout
+{
+	stdout& operator<<(const char* str);
+	stdout& operator<<(char c);
+	unit flush();
+};
+
+export struct stderr
+{
+	stderr& operator<<(const char* str);
+	stderr& operator<<(char c);
+	unit flush();
+};

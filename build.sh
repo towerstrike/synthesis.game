@@ -66,8 +66,10 @@ end
 
 # --- Build Script ---
 
-# Clean previous build artifacts.
-rm -rf build builddir stup compile_commands.json bin
+# Clean previous build artifacts to avoid PCM version conflicts.
+# This ensures consistent compiler usage between module compilation (.pcm files)
+# and source compilation (.cpp files).
+rm -rf build builddir setup compile_commands.json bin
 
 # Ensure build dependencies are installed.
 ensure_llvm
@@ -86,17 +88,9 @@ echo $YELLOW"CXX: $CXX"$NORMAL
 echo $YELLOW"Analyzing module dependencies..."$NORMAL
 python3 discover.py >/dev/null
 
-# Setup meson build directory
+# Setup meson build directory using cross-compilation for consistency
 echo $YELLOW"Setting up meson build..."$NORMAL
-if test -n "$CC"; and test -n "$CXX"
-    # Create a temporary native file
-    echo "[binaries]" > /tmp/native.txt
-    echo "c = '$CC'" >> /tmp/native.txt
-    echo "cpp = '$CXX'" >> /tmp/native.txt
-    meson setup build --native-file /tmp/native.txt --cross-file config/mac.txt
-else
-    meson setup build --cross-file config/mac.txt
-end
+meson setup build --cross-file config/mac.txt
 
 # Create compile commands symlink and build
 ln -sf build/compile_commands.json .

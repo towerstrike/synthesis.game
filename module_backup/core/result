@@ -1,0 +1,115 @@
+export module result;
+import type;
+import error;
+import variant;
+
+export template<typename ok_type, typename error_type>
+using result = variant<ok_type, error_type>;
+
+export template<typename ok_type, typename error_type>
+result<ok_type, error_type> ok(ok_type value) {
+    return result<ok_type, error_type>{value};
+}
+
+export template<typename ok_type, typename error_type>
+result<ok_type, error_type> err(error_type error) {
+    return result<ok_type, error_type>{error};
+}
+
+
+export template<typename ok_type, typename error_type>
+bool is_ok(const result<ok_type, error_type>& r) {
+    return r.template holds<ok_type>();
+}
+
+export template<typename ok_type, typename error_type>
+bool is_err(const result<ok_type, error_type>& r) {
+    return r.template holds<error_type>();
+}
+
+export template<typename ok_type, typename error_type>
+ok_type& unwrap(result<ok_type, error_type>& r) {
+    return r.template get<ok_type>();
+}
+
+export template<typename ok_type, typename error_type>
+const ok_type& unwrap(const result<ok_type, error_type>& r) {
+    return r.template get<ok_type>();
+}
+
+export template<typename ok_type, typename error_type>
+ok_type& expect(result<ok_type, error_type>& r, const char* message) {
+    return r.template get<ok_type>();
+}
+
+export template<typename ok_type, typename error_type>
+const ok_type& expect(const result<ok_type, error_type>& r, const char* message) {
+    return r.template get<ok_type>();
+}
+
+export template<typename ok_type, typename error_type>
+ok_type unwrap_or(const result<ok_type, error_type>& r, ok_type default_value) {
+    if (is_ok(r)) {
+        return unwrap(r);
+    }
+    return default_value;
+}
+
+export template<typename ok_type, typename error_type>
+error_type& unwrap_err(result<ok_type, error_type>& r) {
+    return r.template get<error_type>();
+}
+
+export template<typename ok_type, typename error_type>
+const error_type& unwrap_err(const result<ok_type, error_type>& r) {
+    return r.template get<error_type>();
+}
+
+export template<typename ok_type, typename error_type>
+ok_type* ok_ptr(result<ok_type, error_type>& r) {
+    return r.template get_if<ok_type>();
+}
+
+export template<typename ok_type, typename error_type>
+const ok_type* ok_ptr(const result<ok_type, error_type>& r) {
+    return r.template get_if<ok_type>();
+}
+
+export template<typename ok_type, typename error_type>
+error_type* err_ptr(result<ok_type, error_type>& r) {
+    return r.template get_if<error_type>();
+}
+
+export template<typename ok_type, typename error_type>
+const error_type* err_ptr(const result<ok_type, error_type>& r) {
+    return r.template get_if<error_type>();
+}
+
+export template<typename ok_type, typename error_type, typename func_type>
+auto map(const result<ok_type, error_type>& r, func_type func) -> result<decltype(func(unwrap(r))), error_type> {
+    if (is_ok(r)) {
+        return ok<decltype(func(unwrap(r))), error_type>(func(unwrap(r)));
+    } else {
+        return err<decltype(func(unwrap(r))), error_type>(unwrap_err(r));
+    }
+}
+
+export template<typename ok_type, typename error_type, typename func_type>
+auto map_err(const result<ok_type, error_type>& r, func_type func) -> result<ok_type, decltype(func(unwrap_err(r)))> {
+    if (is_ok(r)) {
+        return ok<ok_type, decltype(func(unwrap_err(r)))>(unwrap(r));
+    } else {
+        return err<ok_type, decltype(func(unwrap_err(r)))>(func(unwrap_err(r)));
+    }
+}
+
+export template<typename ok_type, typename error_type>
+result<ok_type, anyhow> into_anyhow(const result<ok_type, error_type>& r) {
+    if (is_ok(r)) {
+        return ok<ok_type, anyhow>(unwrap(r));
+    } else {
+        return err<ok_type, anyhow>(anyhow{unwrap_err(r)});
+    }
+}
+
+// result type for success/failure with values

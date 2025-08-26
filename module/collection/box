@@ -1,0 +1,57 @@
+export module collection.box;
+import core.type;
+import memory.alloc;
+import core.null;
+import core.result;
+import core.error;
+
+export template<typename element_type, allocator allocator_type = system_allocator>
+class box {
+private:
+    non_null<element_type*> ptr;
+    allocator_type alloc;
+
+public:
+    box() = delete;
+    
+    template<typename... Args>
+    explicit box(allocator_type alloc, Args&&... args);
+    
+    template<typename... Args>
+    box(Args&&... args);
+    
+    explicit box(allocator_type alloc, element_type value);
+    
+    box(const box&) = delete;
+    box& operator=(const box&) = delete;
+    
+    box(box&& other) noexcept;
+    box& operator=(box&& other) noexcept;
+    
+    ~box();
+    
+    result<box<element_type, allocator_type>, alloc_error> clone() const;
+    
+    static result<box<element_type, allocator_type>, anyhow> make(element_type value);
+    static result<box<element_type, allocator_type>, anyhow> make(allocator_type alloc, element_type value);
+    
+    element_type& operator*() const noexcept;
+    element_type* operator->() const noexcept;
+    element_type* get() const noexcept;
+    
+    const element_type& as_ref() const noexcept;
+    element_type& as_mut() noexcept;
+    
+    element_type release() noexcept;
+
+private:
+    explicit box(non_null<element_type*> p, allocator_type a) noexcept;
+};
+
+
+template<typename element_type, typename... Args>
+box(allocator_type, Args...) -> box<element_type>;
+
+template<typename element_type, allocator allocator_type, typename... Args>
+box(allocator_type, Args...) -> box<element_type, allocator_type>;
+

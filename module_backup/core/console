@@ -1,0 +1,79 @@
+export module console;
+
+// console output for debugging and logging
+
+namespace console
+{
+	enum class log_type
+	{
+		trace,
+		debug,
+		info,
+		warn,
+		error,
+		fatal
+	};
+
+	template <typename T>
+	concept stream = requires(T& s, const char* str, char c)
+	{
+		s << str;
+		s << c;
+		s.flush();
+	};
+
+	struct provider
+	{
+		virtual ~provider() = default;
+		virtual unit write(log_type, const char* str) = 0;
+		virtual unit flush(log_type level) = 0;
+	};
+
+	template <stream stream_type>
+	struct stream_provider : provider
+	{
+		stream_type& stream_ref;
+
+		stream_provider(stream_type& s) : stream_ref(s) {}
+
+		unit write(log_type level, const char* str) override
+		{
+			stream_ref << str;
+		}
+
+		unit flush(log_type level) override
+		{
+			stream_ref.flush();
+		}
+	};
+
+	export static stream_provider stdout_provider = stream_provider(stdout);
+
+	export static stream_provider stderr_provider = stream_provider(stderr);
+
+	export static file_provider log_provider("synthesis.log");
+
+	export unit
+	add_provider(box<log_provider> provider, log_type level)
+	{
+	}
+
+	export unit
+	configure()
+	{
+		static bool global_configured = false;
+		if (global_configured)
+			return;
+		global_configured = true;
+
+		configure(stdout_provider, info);
+		configure(stderr_provider, warn, error, fatal);
+		configure(log_provider, debug, info, warn, error, fatal);
+	}
+
+	template <typename... level_variadic>
+	export unit configure(box<log_provider> provider, level_variadic levels)
+	{
+		((add_provider(provider, levels)), ...);
+	}
+} // namespace console

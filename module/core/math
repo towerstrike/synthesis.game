@@ -1,3 +1,0 @@
-export module math;
-
-// sqrt, sin, cos, abs, min, max, clamp for game math

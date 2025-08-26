@@ -1,0 +1,278 @@
+export module trait;
+import type;
+
+export template <typename T>
+struct remove_pointer
+{
+	using type = T;
+};
+
+export template <typename T>
+struct remove_pointer<T*>
+{
+	using type = T;
+};
+
+export template <typename T>
+struct remove_pointer<T* const>
+{
+	using type = T;
+};
+
+export template <typename T>
+struct remove_pointer<T* volatile>
+{
+	using type = T;
+};
+
+export template <typename T>
+struct remove_pointer<T* const volatile>
+{
+	using type = T;
+};
+
+export template <typename T>
+using remove_pointer_type = typename remove_pointer<T>::type;
+
+export template <typename T>
+struct add_pointer
+{
+	using type = T*;
+};
+
+export template <typename T>
+using add_pointer_type = typename add_pointer<T>::type;
+
+export template <typename T>
+struct remove_reference
+{
+	using type = T;
+};
+
+export template <typename T>
+struct remove_reference<T&>
+{
+	using type = T;
+};
+
+export template <typename T>
+struct remove_reference<T&&>
+{
+	using type = T;
+};
+
+export template <typename T>
+using remove_reference_type = typename remove_reference<T>::type;
+
+export template <typename T>
+struct remove_const
+{
+	using type = T;
+};
+
+export template <typename T>
+struct remove_const<const T>
+{
+	using type = T;
+};
+
+export template <typename T>
+using remove_const_type = typename remove_const<T>::type;
+
+export template <typename T>
+struct remove_volatile
+{
+	using type = T;
+};
+
+export template <typename T>
+struct remove_volatile<volatile T>
+{
+	using type = T;
+};
+
+export template <typename T>
+using remove_volatile_type = typename remove_volatile<T>::type;
+
+export template <typename T>
+struct remove_const_volatile
+{
+	using type = remove_const_type<remove_volatile_type<T>>;
+};
+
+export template <typename T>
+using remove_const_volatile_type = typename remove_const_volatile<T>::type;
+
+export template <typename T>
+concept is_pointer = __is_pointer(T);
+
+export template <typename T>
+concept is_reference = __is_reference(T);
+
+export template <typename T>
+concept is_lvalue_reference = __is_lvalue_reference(T);
+
+export template <typename T>
+concept is_rvalue_reference = __is_rvalue_reference(T);
+
+export template <typename T>
+concept is_const = __is_const(T);
+
+export template <typename T>
+concept is_volatile = __is_volatile(T);
+
+export template <typename T>
+concept is_integral = __is_integral(T);
+
+export template <typename T>
+concept is_floating_point = __is_floating_point(T);
+
+export template <typename T>
+concept is_arithmetic = is_integral<T> || is_floating_point<T>;
+
+export template <typename T>
+concept is_void = __is_same(T, unit);
+
+export template <typename T, typename U>
+concept is_same = __is_same(T, U);
+
+export template <typename From, typename To>
+concept is_convertible = __is_convertible_to(From, To);
+
+export template <typename From, typename To>
+concept is_nothrow_convertible = __is_nothrow_convertible_to(From, To);
+
+export template <typename Base, typename Derived>
+concept is_base_of = __is_base_of(Base, Derived);
+
+export template <typename T>
+concept non_void_pointer = is_pointer<T> && !is_same<remove_pointer_type<T>, unit>;
+
+export template <typename T>
+concept dereferenceable_pointer = is_pointer<T> && requires(T ptr) {
+	*ptr;
+};
+
+export template <typename T>
+concept arithmetic_pointer = is_pointer<T> && requires(T ptr) {
+	ptr + 1;
+	ptr - 1;
+	++ptr;
+	--ptr;
+	ptr++;
+	ptr--;
+};
+
+export template <typename T>
+concept complete_pointer = non_void_pointer<T> &&
+			   dereferenceable_pointer<T> &&
+			   arithmetic_pointer<T>;
+
+export template <typename T>
+concept reference_to_pointer = is_reference<T> && requires(T ref) {
+	{ &ref } -> is_pointer;
+};
+
+export template <typename T>
+concept array_subscriptable = requires(T ptr, usize index) {
+	ptr[index];
+};
+
+export template <typename T, typename U = T>
+concept equality_comparable = requires(const T& a, const U& b) {
+	{ a == b } -> is_same<bool>;
+	{ a != b } -> is_same<bool>;
+};
+
+export template <typename T, typename U = T>
+concept ordered_comparable = equality_comparable<T, U> && requires(const T& a, const U& b) {
+	{ a < b } -> is_same<bool>;
+	{ a > b } -> is_same<bool>;
+	{ a <= b } -> is_same<bool>;
+	{ a >= b } -> is_same<bool>;
+};
+
+export template <typename T, typename U = T>
+concept three_way_comparable = requires(const T& a, const U& b) {
+	a <=> b;
+};
+
+export template <typename T, typename... Args>
+concept constructible = __is_constructible(T, Args...);
+
+export template <typename T, typename... Args>
+concept nothrow_constructible = __is_nothrow_constructible(T, Args...);
+
+export template <typename T>
+concept default_constructible = constructible<T>;
+
+export template <typename T>
+concept copy_constructible = constructible<T, const T&>;
+
+export template <typename T>
+concept move_constructible = constructible<T, T&&>;
+
+export template <typename T, typename U>
+concept assignable = __is_assignable(T, U);
+
+export template <typename T>
+concept copy_assignable = assignable<T&, const T&>;
+
+export template <typename T>
+concept move_assignable = assignable<T&, T&&>;
+
+export template <typename T>
+concept has_element_type = requires {
+	typename T::element_type;
+};
+
+export template <typename T>
+concept has_pointer_type = requires {
+	typename T::pointer_type;
+};
+
+export template <typename T>
+concept non_null_like = has_element_type<T> &&
+			has_pointer_type<T> &&
+			is_pointer<typename T::pointer_type>;
+
+export template <typename T>
+T&& declare_value() noexcept;
+
+export template <bool Condition, typename T, typename F>
+struct conditional
+{
+	using type = T;
+};
+
+export template <typename T, typename F>
+struct conditional<false, T, F>
+{
+	using type = F;
+};
+
+export template <bool Condition, typename T, typename F>
+using conditional_type = typename conditional<Condition, T, F>::type;
+
+export template<typename target_type, typename... types>
+concept is_one_of = (is_same<target_type, types> || ...);
+
+export template<typename... types>
+constexpr u64 max_sizeof() noexcept {
+    return (sizeof(types) > ... > 0);
+}
+
+export template<typename... types>
+constexpr u64 max_alignof() noexcept {
+    return (alignof(types) > ... > 0);
+}
+
+export template<u64 index, typename first_type, typename... rest_types>
+struct nth_type_helper {
+    using type = conditional_type<index == 0, first_type, typename nth_type_helper<index - 1, rest_types...>::type>;
+};
+
+export template<u64 index, typename... types>
+using nth_type = typename nth_type_helper<index, types...>::type;
+
+// is_same, is_trivial, enable_if for compile-time type inspection

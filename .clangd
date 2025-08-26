@@ -1,0 +1,23 @@
+CompileFlags:
+  Add: [-std=c++20, -xc++]
+  Remove: [-W*, -w]
+  
+Index:
+  Background: Build
+  StandardLibrary: No
+  
+Diagnostics:
+  Suppress: ['*']
+  ClangTidy:
+    Add: []
+    Remove: ['*']
+  UnusedIncludes: None
+  
+Completion:
+  AllScopes: Yes
+
+# Global fallback flags for all files
+If:
+  PathMatch: .*
+CompileFlags:
+  Add: [-std=c++20, -xc++, -I., -Imodule, -Isrc, -fmodules-ts]
