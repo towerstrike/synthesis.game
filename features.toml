@@ -1,30 +1,16 @@
-# Minimal Feature Configuration for synthesis.game
-# Just enough to fix current build issues
+[features.platforms]
+linux = ["linux", "posix"]
+darwin = ["darwin", "posix"]
+windows = ["windows"]
 
-[build]
-auto_detect_features = true
+[features.architectures]
+x86_64 = ["amd64"]
+arm64 = ["arm64"]
 
-# System access levels
-[access_levels.freestanding]
-compile_flags = ["-ffreestanding", "-nostdlib", "-fno-exceptions", "-fno-rtti", "-fno-stack-protector"]
-
-[access_levels.full]
-compile_flags = ["-fno-exceptions", "-fno-rtti", "-fno-stack-protector"]
-
-# Current features we need to handle
-[features.metal]
-description = "Apple Metal graphics API"
-file_extension = "metal"
-access_level = "full"
-platforms = ["darwin"]
-compile_flags = [
-    "-framework", "Metal",
-    "-framework", "MetalKit", 
-    "-framework", "CoreVideo",
-    "-framework", "QuartzCore",
-    "-framework", "Foundation"
-]
-
-[features.metal.detection]
-method = "framework_exists"
-framework = "Metal"
+[module.io.file]
+base = []
+darwin = ["darwin"]
+linux = ["linux"]
+windows = ["windows"]
+amd64 = ["amd64"]
+arm64 = ["arm64"]
